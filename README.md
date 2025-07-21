@@ -1,9 +1,11 @@
 # 🏞️ River Side Food Court
 
-A modern Django-based food court ordering system where customers can select tables, enter their phone number, browse menus, and add items to their cart. Built with Django, TailwindCSS, DaisyUI, and Alpine.js.
+A modern Django-based food court ordering system where customers can select tables, enter their phone number, browse menus, and add items to their cart. Currently implementing real-time features with Django Channels, WebSockets, Redis, and Daphne for live order tracking and vendor notifications.
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![Django](https://img.shields.io/badge/django-5.2-green.svg)
+![Channels](https://img.shields.io/badge/channels-4.0-red.svg)
+![Redis](https://img.shields.io/badge/redis-5.0-red.svg)
 ![TailwindCSS](https://img.shields.io/badge/tailwindcss-3.x-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
@@ -16,6 +18,8 @@ A modern Django-based food court ordering system where customers can select tabl
 - **🛍️ Add to Cart** - Simple cart functionality with floating cart display
 - **🔄 Reset Function** - Clear selection and start over
 - **📱 Responsive Design** - Works on desktop, tablet, and mobile
+- **⚡ Real-time Updates** - Live order status via WebSockets (in development)
+- **🔔 Live Notifications** - Instant alerts for order updates (planned)
 
 ### 🏗️ **Technical Features**
 - **🎨 Modern UI** - DaisyUI + TailwindCSS with dark theme
@@ -23,6 +27,9 @@ A modern Django-based food court ordering system where customers can select tabl
 - **⚡ HTMX** - For dynamic page updates
 - **🔒 Secure** - CSRF protection and session management
 - **📊 RESTful APIs** - Clean API endpoints for cart operations
+- **🌐 WebSocket Integration** - Real-time communication with Django Channels
+- **🔴 Redis Backend** - Channel layer for WebSocket message routing
+- **🚀 Daphne Server** - ASGI server for handling WebSocket connections
 
 ## 🚀 Quick Start
 
@@ -122,19 +129,32 @@ Once the server is running, access different parts of the system:
 4. **🍽️ Browse Menu** - View drinks and food vendors with categories
 5. **🛒 Add Items** - Add items to cart with floating cart indicator
 6. **🔄 Reset Option** - Clear selection and start over if needed
+7. **⚡ Real-time Tracking** - Live order status updates (in development)
+8. **🔔 Notifications** - Get notified when order status changes (planned)
 
 ## 🛠️ Technical Architecture
 
 ### **Backend Stack**
 - **🐍 Django 5.2** - Web framework
-- **🗄️ SQLite** - Database (default)
+- **⚡ Django Channels 4.0** - WebSocket support and async handling
+- **🔴 Redis 5.0** - Channel layer backend for WebSocket message routing
+- **🚀 Daphne** - ASGI server for handling HTTP and WebSocket connections
+- **🗄️ SQLite/PostgreSQL** - Database (SQLite for dev, PostgreSQL for production)
 - **📧 Session Management** - For customer data persistence
 
 ### **Frontend Stack**
 - **🎨 TailwindCSS + DaisyUI** - Styling framework
 - **🧩 Alpine.js** - Reactive components
 - **⚡ HTMX** - Dynamic page updates
+- **🌐 WebSockets** - Real-time communication with server
 - **📱 Responsive Design** - Mobile-first approach
+
+### **Real-time Communication Flow**
+```
+Customer Browser ←→ WebSocket ←→ Django Channels ←→ Redis ←→ Vendor Dashboard
+       ↓                                                           ↓
+   Order Updates ←→ WebSocket Consumer ←→ Channel Groups ←→ Kitchen Display
+```
 
 ### **Database Models**
 
@@ -165,17 +185,68 @@ GET  /api/items-status/{table}/     # Get order status
 POST /api/clear-session/            # Clear customer session
 ```
 
+### **WebSocket Endpoints (In Development)**
+```
+/ws/orders/table/{table_number}/     # Customer order updates
+/ws/orders/vendor/{vendor_id}/       # Vendor order notifications  
+/ws/orders/kitchen/                  # Kitchen display updates
+/ws/orders/status/{order_id}/        # Order status tracking
+```
+
 ## 🔧 Configuration
 
 ### **Environment Variables**
 ```bash
-# Database (SQLite by default)
+# Database (SQLite by default, PostgreSQL for production)
 DB_NAME=db.sqlite3
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_HOST=localhost
+DB_PORT=5432
+
+# Redis Configuration
+REDIS_URL=redis://localhost:6379/1
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DB=1
 
 # Security
 SECRET_KEY=your-secret-key
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
+
+# ASGI/WebSocket Settings
+ASGI_APPLICATION=core.asgi.application
+```
+
+### **Redis & Channels Configuration**
+```python
+# Channel layers configuration in settings.py
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
+
+# Fallback for development without Redis
+if not REDIS_AVAILABLE:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer'
+        }
+    }
+```
+
+### **Daphne Server Setup**
+```bash
+# For development with WebSockets
+daphne -b 0.0.0.0 -p 8000 core.asgi:application
+
+# Or use Django's built-in ASGI support
+python manage.py runserver
 ```
 
 ## 🧪 Testing
@@ -263,21 +334,81 @@ river_side/
 - [x] Responsive design with TailwindCSS
 - [x] Admin interface for data management
 
-### 🚧 **In Development**
-- [ ] Checkout and order placement
-- [ ] Order tracking system
-- [ ] Real-time updates with WebSockets
-- [ ] Vendor dashboard
-- [ ] Kitchen display system
-- [ ] Email notifications
+### 🚧 **Currently Implementing (Real-time Features)**
+- [ ] **Django Channels Setup** - WebSocket support for real-time communication
+- [ ] **Redis Integration** - Channel layer backend for message routing
+- [ ] **Daphne ASGI Server** - Production-ready WebSocket server
+- [ ] **WebSocket Consumers** - Handle real-time order updates
+- [ ] **Channel Groups** - Organize connections by table/vendor/kitchen
+- [ ] **Real-time Order Status** - Live updates when orders change status
+- [ ] **Vendor Notifications** - Instant alerts for new orders
+- [ ] **Kitchen Display** - Live dashboard showing all active orders
 
-### 📋 **Planned Features**
+### 🔄 **Next Phase Development**
+- [ ] Checkout and order placement completion
+- [ ] Order tracking system with live updates
+- [ ] Vendor dashboard with real-time order management
+- [ ] Kitchen display system with live order feed
+- [ ] Push notifications for order status changes
+- [ ] Email notifications integration
+
+### 📋 **Future Enhancements**
 - [ ] QR code generation for tables
-- [ ] Payment integration
-- [ ] Order history
+- [ ] Payment integration (Stripe/PayPal)
+- [ ] Order history and analytics
 - [ ] Customer feedback system
-- [ ] Analytics dashboard
+- [ ] Advanced analytics dashboard
 - [ ] Multi-language support
+- [ ] Mobile app development
+
+## 🌐 Real-time Architecture Roadmap
+
+### **Phase 1: WebSocket Foundation**
+```python
+# Consumer for handling customer connections
+class OrderConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.table_number = self.scope['url_route']['kwargs']['table_number']
+        self.table_group_name = f'table_{self.table_number}'
+        
+        await self.channel_layer.group_add(
+            self.table_group_name,
+            self.channel_name
+        )
+        await self.accept()
+```
+
+### **Phase 2: Vendor Integration**
+```python
+# Real-time order updates to vendors
+async def send_order_update(order_id, status):
+    channel_layer = get_channel_layer()
+    await channel_layer.group_send(
+        f"vendor_{order.vendor_id}",
+        {
+            'type': 'order_update',
+            'order_id': order_id,
+            'status': status,
+            'timestamp': timezone.now().isoformat()
+        }
+    )
+```
+
+### **Phase 3: Kitchen Display**
+```python
+# Kitchen display real-time updates
+class KitchenConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        await self.channel_layer.group_add("kitchen_display", self.channel_name)
+        await self.accept()
+        
+    async def order_update(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'order_update',
+            'order': event['order_data'],
+            'action': event['action']  # 'new', 'update', 'complete'
+        }))
+```
 
 ## 🤝 Contributing
 
@@ -294,6 +425,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - **Django Team** - For the amazing web framework
+- **Django Channels Team** - For WebSocket and async support
+- **Redis** - For reliable message brokering
+- **Daphne** - For ASGI server capabilities
 - **TailwindCSS + DaisyUI** - For beautiful styling
 - **Alpine.js** - For reactive components
 - **HTMX** - For seamless interactions
