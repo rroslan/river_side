@@ -1,43 +1,32 @@
 # 🏞️ River Side Food Court
 
-A modern, real-time food court management system built with Django, Channels, WebSockets, and Alpine.js. Customers can browse menus, place orders from numbered tables, and track their orders in real-time while vendors manage orders through live dashboards.
+A modern Django-based food court ordering system where customers can select tables, enter their phone number, browse menus, and add items to their cart. Built with Django, TailwindCSS, DaisyUI, and Alpine.js.
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![Django](https://img.shields.io/badge/django-5.2-green.svg)
-![Channels](https://img.shields.io/badge/channels-4.0-red.svg)
+![TailwindCSS](https://img.shields.io/badge/tailwindcss-3.x-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 ## 🌟 Features
 
 ### 👥 **Customer Experience**
-- **📱 Menu-First Landing Page** - Browse all food and drinks immediately
-- **🪑 Smart Table Selection** - Choose from 25 numbered tables
-- **🛒 Real-time Shopping Cart** - Add items with floating cart indicator
-- **📞 Simple Ordering** - Place orders with just name and phone number
-- **📍 Browser Recovery** - Returns to saved table if browser is closed
-- **⚡ Live Order Tracking** - Real-time status updates via WebSockets
-- **🔔 Push Notifications** - Get notified when orders are ready
-
-### 👨‍🍳 **Vendor Management**
-- **📊 Real-time Dashboard** - Live order management interface
-- **🔄 Instant Status Updates** - Change order/item status with immediate sync
-- **🎵 Audio Notifications** - Sound alerts for new orders
-- **📋 Menu Management** - Toggle item availability on-the-fly
-- **🍳 Kitchen Display** - Centralized view of all active orders
-- **📈 Order Statistics** - Track pending, preparing, and ready orders
+- **🪑 Table Selection** - Choose from numbered tables with availability status
+- **📞 Phone Input Step** - Enter contact details before ordering
+- **🛒 Menu Browsing** - View drinks and food vendors with categories
+- **🛍️ Add to Cart** - Simple cart functionality with floating cart display
+- **🔄 Reset Function** - Clear selection and start over
+- **📱 Responsive Design** - Works on desktop, tablet, and mobile
 
 ### 🏗️ **Technical Features**
-- **⚡ Real-time WebSockets** - Powered by Django Channels
-- **🔴 Redis Integration** - Smart fallback to in-memory if Redis unavailable
-- **📱 Responsive Design** - Works on desktop, tablet, and mobile
 - **🎨 Modern UI** - DaisyUI + TailwindCSS with dark theme
-- **🧩 Component-based** - Alpine.js for reactive components
-- **🔒 Secure** - CSRF protection and user authentication
-- **📊 RESTful APIs** - Clean API endpoints for all operations
+- **🧩 Alpine.js** - For interactive components
+- **⚡ HTMX** - For dynamic page updates
+- **🔒 Secure** - CSRF protection and session management
+- **📊 RESTful APIs** - Clean API endpoints for cart operations
 
 ## 🚀 Quick Start
 
-### **Option 1: Automated Setup (Recommended)**
+### **Automated Setup (Recommended)**
 
 ```bash
 cd river_side
@@ -52,7 +41,7 @@ The script will automatically:
 - ✅ Start the development server
 - ✅ Open browser to the application
 
-### **Option 2: Manual Setup**
+### **Manual Setup**
 
 ```bash
 # 1. Install dependencies
@@ -110,9 +99,11 @@ Once the server is running, access different parts of the system:
 
 | Interface | URL | Description |
 |-----------|-----|-------------|
-| 🏠 **Customer Menu** | `http://localhost:8000/` | Main landing page with menu and ordering |
-| 👨‍🍳 **Vendor Dashboard** | `http://localhost:8000/vendors/` | Vendor management interface |
-| 🍳 **Kitchen Display** | `http://localhost:8000/vendors/kitchen/` | Central kitchen order display |
+| 🏠 **Table Selection** | `http://localhost:8000/` | Landing page for table selection |
+| 👤 **Phone Input** | `http://localhost:8000/table/{number}/` | Customer contact details |
+| 🍽️ **Menu** | `http://localhost:8000/table/{number}/menu/` | Browse and order from menu |
+| 🛒 **Checkout** | `http://localhost:8000/table/{number}/checkout/` | Review and place order |
+| 📊 **Track Orders** | `http://localhost:8000/table/{number}/track/` | Order status tracking |
 | ⚙️ **Admin Panel** | `http://localhost:8000/admin/` | Django admin interface |
 | 📊 **API Status** | `http://localhost:8000/api/status/` | System health check |
 
@@ -121,55 +112,29 @@ Once the server is running, access different parts of the system:
 - **Password**: `admin123`
 - **Email**: `admin@riverside.com`
 
-## 🎯 User Workflows
+## 🎯 User Workflow
 
 ### 👤 **Customer Journey**
 
-1. **🌐 Visit Landing Page** - Browse menu with all vendors
-2. **🪑 Select Table** - Choose from available tables (1-25)
-3. **🛒 Add Items** - Browse categories and add items to cart
-4. **💳 Place Order** - Enter name and phone number
-5. **📱 Track Order** - Real-time status updates
-6. **🔔 Get Notified** - Receive alerts when order is ready
-
-### 👨‍🍳 **Vendor Workflow**
-
-1. **📊 Access Dashboard** - View real-time orders
-2. **✅ Confirm Orders** - Accept incoming orders
-3. **🍳 Start Preparing** - Update status to "preparing"
-4. **✅ Mark Ready** - Notify customer when complete
-5. **📋 Manage Menu** - Toggle item availability
-6. **📈 Track Stats** - Monitor order volume and status
-
-### 🍳 **Kitchen Display**
-
-- **📺 Central Display** - All active orders across vendors
-- **⏰ Order Timing** - Shows order age and prep times
-- **🏪 Vendor Grouping** - Orders organized by vendor
-- **🔄 Auto-refresh** - Real-time updates without page reload
+1. **🏠 Landing Page** - View available tables with occupancy status
+2. **🪑 Select Table** - Choose from numbered tables (1-25)
+3. **📞 Enter Details** - Provide phone number and optional name
+4. **🍽️ Browse Menu** - View drinks and food vendors with categories
+5. **🛒 Add Items** - Add items to cart with floating cart indicator
+6. **🔄 Reset Option** - Clear selection and start over if needed
 
 ## 🛠️ Technical Architecture
 
 ### **Backend Stack**
 - **🐍 Django 5.2** - Web framework
-- **⚡ Django Channels** - WebSocket support
-- **🔴 Redis** - Channel layer (with in-memory fallback)
-- **🗄️ PostgreSQL/SQLite** - Database (auto-detection)
-- **📧 Email Integration** - Resend API support
+- **🗄️ SQLite** - Database (default)
+- **📧 Session Management** - For customer data persistence
 
 ### **Frontend Stack**
 - **🎨 TailwindCSS + DaisyUI** - Styling framework
 - **🧩 Alpine.js** - Reactive components
 - **⚡ HTMX** - Dynamic page updates
-- **🌐 WebSockets** - Real-time communication
 - **📱 Responsive Design** - Mobile-first approach
-
-### **Real-time Features**
-```
-Customer ←→ WebSocket ←→ Django Channels ←→ Redis ←→ Vendor Dashboard
-    ↓                                                        ↓
-Order Status Updates ←→ Kitchen Display ←→ Order Management
-```
 
 ### **Database Models**
 
@@ -177,18 +142,17 @@ Order Status Updates ←→ Kitchen Display ←→ Order Management
 - `Vendor` - Food court vendors (drinks/food)
 - `Category` - Menu categories per vendor
 - `MenuItem` - Individual menu items with details
-- `Table` - Numbered tables with capacity
+- `Table` - Numbered tables with capacity and occupancy
 
 #### **Orders App**
-- `Order` - Customer orders with status tracking
+- `Order` - Customer orders with contact information
 - `OrderItem` - Individual items within orders
-- `OrderStatusHistory` - Audit trail of status changes
 - `Cart` - Session-based shopping cart
 - `CartItem` - Items in customer cart
 
 ## 📱 API Endpoints
 
-### **Public APIs**
+### **Customer APIs**
 ```
 GET  /api/status/                    # System health check
 GET  /api/tables/                    # Available tables
@@ -197,52 +161,21 @@ POST /api/update-cart-item/         # Update cart item quantity
 POST /api/remove-from-cart/         # Remove cart item
 POST /api/place-order/{table}/      # Place order for table
 GET  /api/cart-status/{table}/      # Get cart status
-```
-
-### **Vendor APIs**
-```
-POST /vendors/{id}/api/update-order-status/    # Update order status
-POST /vendors/{id}/api/update-item-status/     # Update item status
-POST /vendors/{id}/api/toggle-menu-item/       # Toggle item availability
-```
-
-### **WebSocket Endpoints**
-```
-/ws/orders/table/{table_number}/     # Customer order updates
-/ws/orders/vendor/{vendor_id}/       # Vendor order notifications
-/ws/orders/kitchen/                  # Kitchen display updates
+GET  /api/items-status/{table}/     # Get order status
+POST /api/clear-session/            # Clear customer session
 ```
 
 ## 🔧 Configuration
 
 ### **Environment Variables**
 ```bash
-# Database
-DB_NAME=river_view_dev
-DB_USER=postgres
-DB_PASSWORD=your_password
-DB_HOST=localhost
-DB_PORT=5432
+# Database (SQLite by default)
+DB_NAME=db.sqlite3
 
 # Security
 SECRET_KEY=your-secret-key
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
-
-# Email (Optional)
-RESEND_API_KEY=your-resend-api-key
-```
-
-### **Redis Configuration**
-```python
-# Automatic Redis detection with fallback
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',  # If Redis available
-        # OR
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',   # Fallback
-    },
-}
 ```
 
 ## 🧪 Testing
@@ -261,16 +194,12 @@ python manage.py test
 
 2. **📱 Customer Flow**
    - Visit `http://localhost:8000/`
-   - Select table, add items, place order
-   - Track order in real-time
+   - Select an available table
+   - Enter phone number
+   - Browse menu and add items to cart
+   - Use reset button to start over
 
-3. **👨‍🍳 Vendor Flow**
-   - Login to `http://localhost:8000/vendors/`
-   - Update order status and watch real-time sync
-
-## 🎨 Tailwind CSS Troubleshooting
-
-If you're experiencing styling issues, here are common fixes:
+## 🎨 Tailwind CSS Setup
 
 ### **Quick Fix Script**
 ```bash
@@ -292,27 +221,7 @@ Ensure your `base.html` has:
 {% tailwind_css %}
 ```
 
-#### **3. Verify Configuration**
-Check `tailwind.config.js` content paths:
-```javascript
-content: [
-  "./templates/**/*.html",
-  "./orders/templates/**/*.html", 
-  "./vendors/templates/**/*.html",
-  // ... other paths
-]
-```
-
-#### **4. Common Issues & Solutions**
-
-| Issue | Solution |
-|-------|----------|
-| **No styling at all** | Run `python manage.py tailwind build` |
-| **DaisyUI components missing** | Check `daisyui` plugin in `tailwind.config.js` |
-| **Custom classes not working** | Verify `input.css` has `@tailwind` directives |
-| **Static files not loading** | Run `python manage.py collectstatic` |
-
-#### **5. Development Mode**
+#### **3. Development Mode**
 For real-time CSS rebuilding during development:
 ```bash
 # Terminal 1: Watch for CSS changes
@@ -322,48 +231,53 @@ python manage.py tailwind watch
 python manage.py runserver
 ```
 
-#### **6. Verify Installation**
-```bash
-# Check if Tailwind CLI is downloaded
-python manage.py tailwind download_cli
+## 📂 Project Structure
 
-# List available templates
-python manage.py tailwind list_templates
+```
+river_side/
+├── core/                   # Django project settings
+├── orders/                 # Orders app (cart, orders)
+├── vendors/                # Vendors app (vendors, tables, menu)
+├── templates/              # HTML templates
+│   ├── base.html          # Base template with TailwindCSS
+│   ├── orders/            # Order-related templates
+│   └── vendors/           # Vendor-related templates
+├── static/                # Static files
+├── media/                 # Media uploads
+├── requirements.txt       # Python dependencies
+├── manage.py             # Django management script
+├── start_server.py       # Automated setup script
+└── README.md             # This file
 ```
 
-#### **7. Reset Everything**
-If all else fails:
-```bash
-# Remove existing CSS
-rm -rf assets/css/tailwind.css
-rm -rf staticfiles/
+## 🚀 Current Implementation Status
 
-# Rebuild everything
-python manage.py tailwind build
-python manage.py collectstatic --noinput
-```
+### ✅ **Completed Features**
+- [x] Table selection with occupancy status
+- [x] Phone input step with validation
+- [x] Menu display with vendor categories
+- [x] Add to cart functionality
+- [x] Floating cart indicator
+- [x] Session management for customer data
+- [x] Reset functionality to clear session
+- [x] Responsive design with TailwindCSS
+- [x] Admin interface for data management
 
-## 📦 Deployment
+### 🚧 **In Development**
+- [ ] Checkout and order placement
+- [ ] Order tracking system
+- [ ] Real-time updates with WebSockets
+- [ ] Vendor dashboard
+- [ ] Kitchen display system
+- [ ] Email notifications
 
-### **Production Checklist**
-- [ ] Set `DEBUG=False`
-- [ ] Configure proper database (PostgreSQL)
-- [ ] Set up Redis server
-- [ ] Configure static file serving
-- [ ] Set secure SECRET_KEY
-- [ ] Configure ALLOWED_HOSTS
-- [ ] Set up SSL/HTTPS
-- [ ] Configure email backend
-
-### **Docker Deployment** (Optional)
-```dockerfile
-FROM python:3.11
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-```
+### 📋 **Planned Features**
+- [ ] QR code generation for tables
+- [ ] Payment integration
+- [ ] Order history
+- [ ] Customer feedback system
+- [ ] Analytics dashboard
+- [ ] Multi-language support
 
 ## 🤝 Contributing
 
@@ -380,16 +294,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - **Django Team** - For the amazing web framework
-- **Django Channels** - For WebSocket support
 - **TailwindCSS + DaisyUI** - For beautiful styling
 - **Alpine.js** - For reactive components
 - **HTMX** - For seamless interactions
 
 ## 📞 Support
 
-- **📧 Email**: support@riverside-foodcourt.com
-- **🐛 Issues**: [GitHub Issues](https://github.com/yourusername/river-side-food-court/issues)
-- **💬 Discussions**: [GitHub Discussions](https://github.com/yourusername/river-side-food-court/discussions)
+- **🐛 Issues**: Create an issue in the repository
+- **💬 Questions**: Use the discussions section
 
 ---
 
