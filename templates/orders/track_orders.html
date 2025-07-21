@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Track Your Orders - Table {{ table.number }} - River Side Food Court{% endblock %}
+
+{% block extra_css %}
+<style>
+    .order-status-pending { @apply border-l-4 border-warning bg-warning/10; }
+    .order-status-confirmed { @apply border-l-4 border-info bg-info/10; }
+    .order-status-preparing { @apply border-l-4 border-primary bg-primary/10; }
+    .order-status-ready { @apply border-l-4 border-success bg-success/10; }
+    .order-status-delivered { @apply border-l-4 border-neutral bg-neutral/10; }
+    .order-status-cancelled { @apply border-l-4 border-error bg-error/10; }
+
+    .pulse-animation {
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .order-item-card {
+        transition: all 0.3s ease;
+    }
+
+    .order-item-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+    }
+
+    .status-pending .status-dot { background-color: #f59e0b; }
+    .status-confirmed .status-dot { background-color: #3b82f6; }
+    .status-preparing .status-dot { background-color: #8b5cf6; animation: pulse 2s infinite; }
+    .status-ready .status-dot { background-color: #10b981; animation: pulse 2s infinite; }
+    .status-delivered .status-dot { background-color: #6b7280; }
+    .status-cancelled .status-dot { background-color: #ef4444; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-base-100 py-8" x-data="orderTracker()">
+    <div class="container mx-auto px-4">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+            <div></div>
+                <h1 class="text-3xl font-bold text-primary mb-2">Track Your Orders</h1>
+                <div class="flex items-center gap-4 text-base-content/70">
+                    <span class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                        </svg>
+                        Table {{ table.number }}
+                    </span>
+                    <span class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span x-text="currentTime"></span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="flex gap-2 mt-4 md:mt-0">
+                <a href="{% url 'orders:table_menu' table.number %}" class="btn btn-primary btn-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Order More
+                </a>
+                <a href="{% url 'orders:order_history' table.number %}" class="btn btn-outline btn-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    History
+                </a>
+            </div>
+        </div>
+
+        <!-- Connection Status -->
+        <div x-show="!connected" class="alert alert-warning mb-6">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            <span>Connecting to real-time updates...</span>
+        </div>
+
+        <!-- Real-time Status Indicator -->
+        <div x-show="connected" class="alert alert-success mb-6">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>Connected - Real-time updates active</span>
+            <div class="status-dot bg-success pulse-animation"></div>
+        </div>
+
+        <!-- Orders List -->
+        <div x-show="orders.length > 0">
+            <div class="grid gap-6">
+                <template x-for="order in orders" :key="order.id">
+                    <div class="card bg-base-200 shadow-lg order-item-card"
+                         :class="'order-status-' + order.status">
+                        <div class="card-body">
+                            <!-- Order Header -->
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+                                <div>
+                                    <h3 class="card-title text-lg">
+                                        Order #<span x-text="order.id.substring(0, 8)"></span>
+                                    </h3>
+                                    <div class="flex items-center mt-1" :class="'status-' + order.status">
+                                        <span class="status-dot"></span>
+                                        <span class="font-medium capitalize" x-text="order.status.replace('_', ' ')"></span>
+                                    </div>
+                                </div>
+
+                                <div class="text-right mt-2 md:mt-0">
+                                    <div class="text-2xl font-bold text-primary">
+                                        $<span x-text="parseFloat(order.total_amount).toFixed(2)"></span>
+                                    </div>
+                                    <div class="text-sm text-base-content/60">
+                                        <span x-text="formatTime(order.created_at)"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Estimated Ready Time -->
+                            <div x-show="order.estimated_ready_time && ['confirmed', 'preparing'].includes(order.status)"
+                                 class="alert alert-info mb-4">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span></span>
+                                    Estimated ready time:
+                                    <strong x-text="formatTime(order.estimated_ready_time)"></strong>
+                                </span>
+                            </div>
+
+                            <!-- Ready for Pickup Alert -->
+                            <div x-show="order.status === 'ready'"
+                                 class="alert alert-success mb-4 pulse-animation">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span><strong>Your order is ready for pickup!</strong></span>
+                            </div>
+
+                            <!-- Order Items -->
+                            <div class="space-y-3">
+                                <template x-for="item in order.items" :key="item.id">
+                                    <div class="flex justify-between items-center p-3 bg-base-100 rounded-lg">
+                                        <div class="flex-1">
+                                            <div class="flex items-center justify-between">
+                                                <span class="font-medium" x-text="item.quantity + 'x ' + item.name"></span>
+                                                <span class="text-sm text-base-content/60" x-text="item.vendor"></span>
+                                            </div>
+
+                                            <!-- Item Status -->
+                                            <div class="flex items-center mt-1" :class="'status-' + item.status">
+                                                <span class="status-dot"></span>
+                                                <span class="text-sm capitalize" x-text="item.status.replace('_', ' ')"></span>
+                                            </div>
+
+                                            <!-- Special Instructions -->
+                                            <div x-show="item.special_instructions" class="text-sm text-base-content/60 mt-1">
+                                                <em x-text="item.special_instructions"></em>
+                                            </div>
+                                        </div>
+
+                                        <div class="text-right ml-4">
+                                            <span class="font-medium">$<span x-text="parseFloat(item.subtotal).toFixed(2)"></span></span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Customer Notes -->
+                            <div x-show="order.notes" class="mt-4 p-3 bg-base-100 rounded-lg">
+                                <div class="text-sm font-medium mb-1">Notes:</div>
+                                <div class="text-sm text-base-content/70" x-text="order.notes"></div>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="mt-4">
+                                <div class="flex justify-between text-xs text-base-content/60 mb-1">
+                                    <span>Order Progress</span>
+                                    <span x-text="getProgressText(order.status)"></span>
+                                </div>
+                                <progress class="progress progress-primary w-full"
+                                         :value="getProgressValue(order.status)"
+                                         max="100"></progress>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- No Orders State -->
+        <div x-show="orders.length === 0 && connected" class="text-center py-16">
+            <div class="text-6xl mb-4">🍽️</div>
+            <h3 class="text-2xl font-bold text-base-content/70 mb-2">No Active Orders</h3>
+            <p class="text-base-content/50 mb-6">You don't have any active orders at the moment.</p>
+            <a href="{% url 'orders:table_menu' table.number %}" class="btn btn-primary">
+                Browse Menu
+            </a>
+        </div>
+
+        <!-- Loading State -->
+        <div x-show="!connected && orders.length === 0" class="text-center py-16">
+            <div class="loading loading-spinner loading-lg text-primary mb-4"></div>
+            <h3 class="text-xl font-bold text-base-content/70">Loading Orders...</h3>
+        </div>
+    </div>
+</div>
+
+<script>
+function orderTracker() {
+    return {
+        orders: [],
+        connected: false,
+        socket: null,
+        currentTime: '',
+
+        init() {
+            this.updateTime();
+            setInterval(() => this.updateTime(), 1000);
+            this.connectWebSocket();
+
+            // Load initial orders
+            this.orders = {{ orders|safe }} || [];
+        },
+
+        connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/orders/table/{{ table.number }}/`;
+
+            this.socket = new WebSocket(wsUrl);
+
+            this.socket.onopen = () => {
+                console.log('WebSocket connected');
+                this.connected = true;
+
+                // Send ping to keep connection alive
+                setInterval(() => {
+                    if (this.socket.readyState === WebSocket.OPEN) {
+                        this.socket.send(JSON.stringify({type: 'ping'}));
+                    }
+                }, 30000);
+            };
+
+            this.socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                this.handleWebSocketMessage(data);
+            };
+
+            this.socket.onclose = () => {
+                console.log('WebSocket disconnected');
+                this.connected = false;
+
+                // Attempt to reconnect after 3 seconds
+                setTimeout(() => {
+                    this.connectWebSocket();
+                }, 3000);
+            };
+
+            this.socket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        },
+
+        handleWebSocketMessage(data) {
+            switch(data.type) {
+                case 'order_list':
+                    this.orders = data.orders;
+                    break;
+                case 'order_update':
+                    this.updateOrder(data.order);
+                    this.showNotification('Order Updated', 'Your order status has been updated');
+                    break;
+                case 'order_status_change':
+                    this.updateOrderStatus(data.order_id, data.status);
+                    this.showNotification('Status Change', data.message);
+                    break;
+                case 'new_order':
+                    this.addNewOrder(data.order);
+                    this.showNotification('New Order', 'Your order has been placed successfully');
+                    break;
+                case 'pong':
+                    // Keep-alive response
+                    break;
+            }
+        },
+
+        updateOrder(updatedOrder) {
+            const index = this.orders.findIndex(order => order.id === updatedOrder.id);
+            if (index !== -1) {
+                this.orders[index] = updatedOrder;
+            }
+        },
+
+        updateOrderStatus(orderId, newStatus) {
+            const order = this.orders.find(order => order.id === orderId);
+            if (order) {
+                order.status = newStatus;
+            }
+        },
+
+        addNewOrder(newOrder) {
+            // Check if order already exists
+            if (!this.orders.find(order => order.id === newOrder.id)) {
+                this.orders.unshift(newOrder);
+            }
+        },
+
+        formatTime(timestamp) {
+            return new Date(timestamp).toLocaleTimeString();
+        },
+
+        updateTime() {
+            this.currentTime = new Date().toLocaleTimeString();
+        },
+
+        getProgressValue(status) {
+            const statusProgress = {
+                'pending': 10,
+                'confirmed': 30,
+                'preparing': 60,
+                'ready': 90,
+                'delivered': 100,
+                'cancelled': 0
+            };
+            return statusProgress[status] || 0;
+        },
+
+        getProgressText(status) {
+            const statusText = {
+                'pending': 'Order received',
+                'confirmed': 'Order confirmed',
+                'preparing': 'Being prepared',
+                'ready': 'Ready for pickup',
+                'delivered': 'Delivered',
+                'cancelled': 'Cancelled'
+            };
+            return statusText[status] || status;
+        },
+
+        showNotification(title, message) {
+            // Create toast notification
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-top toast-end z-50';
+            toast.innerHTML = `
+                <div class="alert alert-success">
+                    <div>
+                        <h3 class="font-bold">${title}</h3>
+                        <div class="text-xs">${message}</div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(toast);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                toast.remove();
+            }, 5000);
+
+            // Play notification sound if supported
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(title, {
+                    body: message,
+                    icon: '/static/favicon.ico'
+                });
+            }
+        }
+    };
+}
+
+// Request notification permission
+if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+}
+</script>
+{% endblock %}

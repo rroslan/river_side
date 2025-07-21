@@ -1,0 +1,223 @@
+{% extends 'base.html' %} {% load static %} {% block title %}Select Your Table -
+River Side Food Court{% endblock %} {% block content %}
+<div class="min-h-screen bg-base-100 py-8">
+    <div class="container mx-auto px-4">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-primary mb-4">
+                Welcome to River Side Food Court
+            </h1>
+            <p class="text-lg text-base-content/70">
+                Please select your table number to start ordering
+            </p>
+        </div>
+
+        <!-- Table Grid -->
+        <div class="max-w-6xl mx-auto">
+            <div
+                class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6"
+            >
+                {% for table in tables %}
+                <div
+                    class="card bg-base-200 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                >
+                    <div class="card-body p-6 text-center">
+                        <!-- Table Number -->
+                        <div class="text-3xl font-bold text-primary mb-2">
+                            {{ table.number }}
+                        </div>
+
+                        <!-- Table Status -->
+                        {% if table.occupied %}
+                        <div class="badge badge-error gap-2 mb-4">
+                            <svg
+                                class="w-3 h-3"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                    clip-rule="evenodd"
+                                ></path>
+                            </svg>
+                            Occupied
+                        </div>
+                        {% else %}
+                        <div class="badge badge-success gap-2 mb-4">
+                            <svg
+                                class="w-3 h-3"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clip-rule="evenodd"
+                                ></path>
+                            </svg>
+                            Available
+                        </div>
+                        {% endif %}
+
+                        <!-- Seats Info -->
+                        <div class="text-sm text-base-content/60 mb-4">
+                            <svg
+                                class="w-4 h-4 inline mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                ></path>
+                            </svg>
+                            {{ table.seats }} seats
+                        </div>
+
+                        <!-- Action Button -->
+                        {% if table.occupied %}
+                        <button class="btn btn-disabled btn-block" disabled>
+                            Table Occupied
+                        </button>
+                        {% else %}
+                        <a
+                            href="{% url 'orders:phone_input' table.number %}"
+                            class="btn btn-primary btn-block"
+                        >
+                            Select Table
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-full text-center py-12">
+                    <div class="text-6xl mb-4">🍽️</div>
+                    <h3 class="text-2xl font-bold text-base-content/70 mb-2">
+                        No Tables Available
+                    </h3>
+                    <p class="text-base-content/50">
+                        Please check back later or contact staff for assistance.
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Information Cards -->
+        <div class="grid md:grid-cols-3 gap-6 mt-16 max-w-4xl mx-auto">
+            <div
+                class="card bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20"
+            >
+                <div class="card-body text-center">
+                    <div class="text-3xl mb-4">📱</div>
+                    <h3 class="card-title justify-center text-primary mb-2">
+                        Easy Ordering
+                    </h3>
+                    <p class="text-sm text-base-content/70">
+                        Scan QR code or select your table to browse our menu and
+                        place orders directly from your phone.
+                    </p>
+                </div>
+            </div>
+
+            <div
+                class="card bg-gradient-to-br from-secondary/10 to-secondary/5 border border-secondary/20"
+            >
+                <div class="card-body text-center">
+                    <div class="text-3xl mb-4">⚡</div>
+                    <h3 class="card-title justify-center text-secondary mb-2">
+                        Real-time Updates
+                    </h3>
+                    <p class="text-sm text-base-content/70">
+                        Get live notifications about your order status and
+                        estimated preparation time.
+                    </p>
+                </div>
+            </div>
+
+            <div
+                class="card bg-gradient-to-br from-accent/10 to-accent/5 border border-accent/20"
+            >
+                <div class="card-body text-center">
+                    <div class="text-3xl mb-4">🍕</div>
+                    <h3 class="card-title justify-center text-accent mb-2">
+                        Multiple Vendors
+                    </h3>
+                    <p class="text-sm text-base-content/70">
+                        Choose from various food and drink vendors all in one
+                        convenient location.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="mt-16 text-center">
+            <div class="card bg-base-200 max-w-2xl mx-auto">
+                <div class="card-body">
+                    <h3 class="card-title justify-center mb-4">Need Help?</h3>
+                    <p class="text-base-content/70 mb-4">
+                        If you're having trouble finding an available table or
+                        need assistance with ordering, our friendly staff is
+                        here to help!
+                    </p>
+                    <div class="flex flex-wrap gap-2 justify-center">
+                        <div class="badge badge-outline">
+                            <svg
+                                class="w-3 h-3 mr-1"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"
+                                ></path>
+                            </svg>
+                            Call Staff
+                        </div>
+                        <div class="badge badge-outline">
+                            <svg
+                                class="w-3 h-3 mr-1"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                    clip-rule="evenodd"
+                                ></path>
+                            </svg>
+                            Help Desk
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-refresh table status every 30 seconds
+    setInterval(() => {
+        location.reload();
+    }, 30000);
+
+    // Add loading state to table selection buttons
+    document.addEventListener("DOMContentLoaded", function () {
+        const tableButtons = document.querySelectorAll('a[href*="table"]');
+
+        tableButtons.forEach((button) => {
+            button.addEventListener("click", function (e) {
+                const btn = e.target;
+                if (!btn.classList.contains("btn-disabled")) {
+                    btn.classList.add("loading");
+                    btn.textContent = "Loading...";
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

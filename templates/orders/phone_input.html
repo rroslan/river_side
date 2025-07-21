@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Enter Your Details - Table {{ table.number }} - River Side Food Court{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-base-100 py-8">
+    <div class="container mx-auto px-4">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="flex items-center justify-center mb-4">
+                <div class="badge badge-primary badge-lg">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4l2 2 4-4"></path>
+                    </svg>
+                    Table {{ table.number }}
+                </div>
+            </div>
+            <h1 class="text-3xl font-bold text-primary mb-2">Almost Ready!</h1>
+            <p class="text-lg text-base-content/70">Please provide your contact details to proceed with ordering</p>
+        </div>
+
+        <!-- Phone Input Form -->
+        <div class="max-w-md mx-auto">
+            <div class="card bg-base-200 shadow-xl">
+                <div class="card-body">
+                    <div class="text-center mb-6">
+                        <div class="text-4xl mb-3">📱</div>
+                        <h2 class="card-title justify-center text-xl">Contact Information</h2>
+                        <p class="text-sm text-base-content/60 mt-2">
+                            We'll use this to notify you when your order is ready
+                        </p>
+                    </div>
+
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-error mb-4">
+                            <svg class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>{{ message }}</span>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" id="phone-form">
+                        {% csrf_token %}
+
+                        <!-- Phone Number -->
+                        <div class="form-control mb-4">
+                            <label class="label">
+                                <span class="label-text font-medium">Phone Number *</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">📞</span>
+                                <input
+                                    type="tel"
+                                    name="phone"
+                                    placeholder="Enter your phone number"
+                                    class="input input-bordered flex-1"
+                                    required
+                                    pattern="[0-9+\-\s\(\)]+"
+                                    title="Please enter a valid phone number"
+                                >
+                            </div>
+                            <label class="label">
+                                <span class="label-text-alt text-base-content/60">
+                                    We'll send you order updates via SMS
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Customer Name (Optional) -->
+                        <div class="form-control mb-6">
+                            <label class="label">
+                                <span class="label-text font-medium">Name (Optional)</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">👤</span>
+                                <input
+                                    type="text"
+                                    name="customer_name"
+                                    placeholder="Your name"
+                                    class="input input-bordered flex-1"
+                                    maxlength="100"
+                                >
+                            </div>
+                            <label class="label">
+                                <span class="label-text-alt text-base-content/60">
+                                    Helps us identify your order
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn btn-primary btn-block btn-lg" id="submit-btn">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                            </svg>
+                            Continue to Menu
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Back to Table Selection -->
+            <div class="text-center mt-6">
+                <a href="{% url 'orders:table_selection' %}"
+                   class="btn btn-ghost btn-sm">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to Table Selection
+                </a>
+            </div>
+        </div>
+
+        <!-- Info Section -->
+        <div class="max-w-2xl mx-auto mt-16">
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="card bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+                    <div class="card-body text-center">
+                        <div class="text-3xl mb-4">🔒</div>
+                        <h3 class="card-title justify-center text-primary mb-2">Privacy Protected</h3>
+                        <p class="text-sm text-base-content/70">
+                            Your contact information is secure and only used for order notifications.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card bg-gradient-to-br from-secondary/10 to-secondary/5 border border-secondary/20">
+                    <div class="card-body text-center">
+                        <div class="text-3xl mb-4">📲</div>
+                        <h3 class="card-title justify-center text-secondary mb-2">Instant Updates</h3>
+                        <p class="text-sm text-base-content/70">
+                            Get notified when your order is confirmed, being prepared, and ready for pickup.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('phone-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const phoneInput = document.querySelector('input[name="phone"]');
+
+    // Phone number formatting
+    phoneInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length >= 10) {
+            // Format as (XXX) XXX-XXXX for US numbers
+            if (value.length === 10) {
+                value = value.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+            }
+        }
+        e.target.value = value;
+    });
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        const phone = phoneInput.value.replace(/\D/g, '');
+
+        if (phone.length < 10) {
+            e.preventDefault();
+            phoneInput.focus();
+            phoneInput.setCustomValidity('Please enter a valid phone number with at least 10 digits');
+            phoneInput.reportValidity();
+            return;
+        }
+
+        phoneInput.setCustomValidity('');
+
+        // Add loading state
+        submitBtn.classList.add('loading');
+        submitBtn.disabled = true;
+    });
+
+    // Auto-focus phone input
+    phoneInput.focus();
+});
+</script>
+{% endblock %}

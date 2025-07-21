@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Vendor Dashboard - River Side Food Court{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-base-100 py-8">
+    <div class="container mx-auto px-4">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-primary</div> mb-2">Vendor Dashboard</h1>
+                <p class="text-base-content/70">Manage your food court operations</p>
+            </div>
+            <a href="{% url 'vendors:kitchen_display' %}" class="btn btn-primary">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
+                </svg>
+                Kitchen Display
+            </a>
+        </div>
+
+        <!-- Vendors Grid -->
+        <div x-show="vendors.length > 0" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for vendor in vendors %}
+            <div class="card bg-base-200 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                <div class="card-body">
+                    <!-- Vendor Header -->
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            {% if vendor.logo %}
+                            <img src="{{ vendor.logo.url }}" alt="{{ vendor.name }}" class="w-12 h-12 rounded-full mr-3">
+                            {% else %}
+                            <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center mr-3">
+                                {% if vendor.vendor_type == 'drinks' %}
+                                <span class="text-2xl">🥤</span>
+                                {% else %}
+                                <span class="text-2xl">🍽️</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            <div>
+                                <h3 class="card-title text-lg">{{ vendor.name }}</h3>
+                                <div class="badge badge-outline badge-sm">{{ vendor.get_vendor_type_display }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Status Indicator -->
+                        {% if vendor.is_active %}
+                        <div class="badge badge-success">Active</div>
+                        {% else %}
+                        <div class="badge badge-error">Inactive</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Description -->
+                    <p class="text-base-content/70 mb-4">{{ vendor.description|default:"No description available" }}</p>
+
+                    <!-- Operating Hours -->
+                    {% if vendor.opening_time and vendor.closing_time %}
+                    <div class="flex items-center text-sm text-base-content/60 mb-4">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        {{ vendor.opening_time|time:"g:i A" }} - {{ vendor.closing_time|time:"g:i A" }}
+                    </div>
+                    {% endif %}
+
+                    <!-- Quick Stats -->
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <div class="stat bg-base-100 rounded p-2">
+                            <div class="stat-title text-xs">Categories</div>
+                            <div class="stat-value text-sm">{{ vendor.categories.count }}</div>
+                        </div>
+                        <div class="stat bg-base-100 rounded p-2">
+                            <div class="stat-title text-xs">Menu Items</div>
+                            <div class="stat-value text-sm">
+                                {% with total_items=vendor.categories.all|length %}
+                                {% if total_items > 0 %}
+                                    {{ vendor.categories.first.menu_items.count|default:0 }}+
+                                {% else %}
+                                    0
+                                {% endif %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="card-actions justify-end">
+                        <a href="{% url 'vendors:menu_management' vendor.id %}"
+                           class="btn btn-outline btn-sm">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Menu
+                        </a>
+                        <a href="{% url 'vendors:vendor_dashboard' vendor.id %}"
+                           class="btn btn-primary btn-sm">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 002 2h2a2 2 0 012-2V7a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 00-2 2h-2a2 2 0 00-2 2v6a2 2 0 01-2 2H7a2 2 0 01-2-2z"></path>
+                            </svg>
+                            Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <!-- No Vendors State -->
+            <div class="col-span-full text-center py-16">
+                <div class="text-6xl mb-4">🏪</div>
+                <h3 class="text-2xl font-bold text-base-content/70 mb-2">No Vendors Found</h3>
+                <p class="text-base-content/50 mb-6">
+                    {% if user.is_staff %}
+                        No vendors have been created yet. Create a vendor to get started.
+                    {% else %}
+                        You don't have access to any vendors. Contact an administrator.
+                    {% endif %}
+                </p>
+                {% if user.is_staff %}
+                <a href="/admin/vendors/vendor/add/" class="btn btn-primary">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Create Vendor
+                </a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Summary Stats -->
+        {% if vendors %}
+        <div class="mt-12">
+            <div class="stats stats-vertical lg:stats-horizontal shadow bg-base-200 w-full">
+                <div class="stat">
+                    <div class="stat-title">Total Vendors</div>
+                    <div class="stat-value text-primary">{{ vendors.count }}</div>
+                    <div class="stat-desc">Across all categories</div>
+                </div>
+
+                <div class="stat">
+                    <div class="stat-title">Drinks Vendors</div>
+                    <div class="stat-value text-secondary">
+                        {% with drinks_count=vendors|length %}
+                        {% for vendor in vendors %}
+                            {% if vendor.vendor_type == 'drinks' %}{{ forloop.counter0|add:1 }}{% endif %}
+                        {% endfor %}
+                        {% endwith %}
+                    </div>
+                    <div class="stat-desc">Beverage specialists</div>
+                </div>
+
+                <div class="stat">
+                    <div class="stat-title">Food Vendors</div>
+                    <div class="stat-value text-accent">
+                        {% with food_count=vendors|length %}
+                        {% for vendor in vendors %}
+                            {% if vendor.vendor_type == 'food' %}{{ forloop.counter0|add:1 }}{% endif %}
+                        {% endfor %}
+                        {% endwith %}
+                    </div>
+                    <div class="stat-desc">Food specialists</div>
+                </div>
+
+                <div class="stat">
+                    <div class="stat-title">Active Now</div>
+                    <div class="stat-value">
+                        {% with active_count=0 %}
+                        {% for vendor in vendors %}
+                            {% if vendor.is_active %}{{ forloop.counter0|add:1 }}{% endif %}
+                        {% endfor %}
+                        {% endwith %}
+                    </div>
+                    <div class="stat-desc">Currently serving</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Actions -->
+        <div class="mt-8">
+            <div class="card bg-base-200 shadow-lg">
+                <div class="card-body">
+                    <h3 class="card-title">Quick Actions</h3>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{% url 'vendors:kitchen_display' %}" class="btn btn-outline btn-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
+                            </svg>
+                            Kitchen Display
+                        </a>
+                        <a href="/" class="btn btn-outline btn-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                            </svg>
+                            Customer View
+                        </a>
+                        {% if user.is_staff %}
+                        <a href="/admin/" class="btn btn-outline btn-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            Admin Panel
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh vendor status every 30 seconds
+setInterval(() => {
+    // Check for any new notifications or updates
+    // This could be expanded to use WebSockets for real-time updates
+}, 30000);
+
+// Add loading states to action buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const actionButtons = document.querySelectorAll('a[href*="dashboard"], a[href*="menu"]');
+
+    actionButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn');
+            if (btn && !btn.classList.contains('btn-disabled')) {
+                btn.classList.add('loading');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

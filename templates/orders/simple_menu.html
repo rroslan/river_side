@@ -1,0 +1,413 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Menu - Table {{ table.number }} - River Side Food Court{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-base-100 py-8">
+    <div class="container mx-auto px-4">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="flex items-center justify-center mb-4">
+                <div class="badge badge-primary badge-lg">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4l2 2 4-4"></path>
+                    </svg>
+                    Table {{ table.number }}
+                </div>
+            </div>
+            <h1 class="text-3xl font-bold text-primary mb-2">River Side Food Court</h1>
+            <p class="text-lg text-base-content/70">Choose from our delicious menu</p>
+        </div>
+
+        <!-- Customer Info -->
+        <div class="text-center mb-6">
+            <div class="flex items-center justify-center gap-2 flex-wrap">
+                <div class="badge badge-outline">
+                    📞 {{ customer_phone }}
+                </div>
+                {% if customer_name %}
+                <div class="badge badge-outline">
+                    👤 {{ customer_name }}
+                </div>
+                {% endif %}
+                <button
+                    class="btn btn-sm btn-ghost btn-outline"
+                    onclick="resetSelection()"
+                    title="Reset selection and start over"
+                >
+                    🔄 Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Menu Sections -->
+        <div class="max-w-6xl mx-auto">
+            <!-- Drinks Section -->
+            <div class="mb-12">
+                <h2 class="text-2xl font-bold mb-6 text-center">
+                    <span class="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                        🥤 Beverages
+                    </span>
+                </h2>
+
+                {% for vendor in drinks_vendors %}
+                <div class="card bg-gradient-to-br from-blue-900/20 to-blue-700/20 shadow-xl mb-6">
+                    <div class="card-body">
+                        <h3 class="card-title text-2xl text-blue-300 mb-4">
+                            {{ vendor.name }}
+                        </h3>
+                        {% if vendor.description %}
+                        <p class="text-blue-200/80 mb-6">{{ vendor.description }}</p>
+                        {% endif %}
+
+                        {% for category in vendor.categories.all %}
+                        {% if category.is_active %}
+                        <div class="mb-8">
+                            <h4 class="text-xl font-semibold text-blue-200 mb-4 border-b border-blue-400/30 pb-2">
+                                {{ category.name }}
+                            </h4>
+                            {% if category.description %}
+                            <p class="text-blue-300/70 mb-4 text-sm">{{ category.description }}</p>
+                            {% endif %}
+
+                            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {% for item in category.menu_items.all %}
+                                {% if item.is_available %}
+                                <div class="card bg-base-200/50 backdrop-blur shadow-md hover:shadow-lg transition-all duration-300">
+                                    <div class="card-body p-4">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <h5 class="font-bold text-base-content">{{ item.name }}</h5>
+                                            <div class="badge badge-primary">${{ item.price }}</div>
+                                        </div>
+
+                                        {% if item.description %}
+                                        <p class="text-sm text-base-content/70 mb-3">{{ item.description }}</p>
+                                        {% endif %}
+
+                                        <!-- Tags -->
+                                        <div class="flex flex-wrap gap-1 mb-3">
+                                            {% if item.is_vegetarian %}
+                                            <div class="badge badge-success badge-sm">🌱 Vegetarian</div>
+                                            {% endif %}
+                                            {% if item.is_vegan %}
+                                            <div class="badge badge-success badge-sm">🌿 Vegan</div>
+                                            {% endif %}
+                                            {% if item.is_spicy %}
+                                            <div class="badge badge-warning badge-sm">🌶️ Spicy</div>
+                                            {% endif %}
+                                            {% if item.calories %}
+                                            <div class="badge badge-ghost badge-sm">{{ item.calories }} cal</div>
+                                            {% endif %}
+                                        </div>
+
+                                        <!-- Add to Cart Button -->
+                                        <button
+                                            class="btn btn-primary btn-sm btn-block"
+                                            onclick="addToCart({{ item.id }}, '{{ item.name|escapejs }}', {{ item.price }}, {{ table.number }})"
+                                        >
+                                            Add to Cart
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-12">
+                    <div class="text-6xl mb-4">🥤</div>
+                    <p class="text-base-content/60">No beverages available at the moment</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Food Section -->
+            <div class="mb-12">
+                <h2 class="text-2xl font-bold mb-6 text-center">
+                    <span class="bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+                        🍽️ Food
+                    </span>
+                </h2>
+
+                {% for vendor in food_vendors %}
+                <div class="card bg-gradient-to-br from-orange-900/20 to-orange-700/20 shadow-xl mb-6">
+                    <div class="card-body">
+                        <h3 class="card-title text-2xl text-orange-300 mb-4">
+                            {{ vendor.name }}
+                        </h3>
+                        {% if vendor.description %}
+                        <p class="text-orange-200/80 mb-6">{{ vendor.description }}</p>
+                        {% endif %}
+
+                        {% for category in vendor.categories.all %}
+                        {% if category.is_active %}
+                        <div class="mb-8">
+                            <h4 class="text-xl font-semibold text-orange-200 mb-4 border-b border-orange-400/30 pb-2">
+                                {{ category.name }}
+                            </h4>
+                            {% if category.description %}
+                            <p class="text-orange-300/70 mb-4 text-sm">{{ category.description }}</p>
+                            {% endif %}
+
+                            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {% for item in category.menu_items.all %}
+                                {% if item.is_available %}
+                                <div class="card bg-base-200/50 backdrop-blur shadow-md hover:shadow-lg transition-all duration-300">
+                                    <div class="card-body p-4">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <h5 class="font-bold text-base-content">{{ item.name }}</h5>
+                                            <div class="badge badge-primary">${{ item.price }}</div>
+                                        </div>
+
+                                        {% if item.description %}
+                                        <p class="text-sm text-base-content/70 mb-3">{{ item.description }}</p>
+                                        {% endif %}
+
+                                        <!-- Tags -->
+                                        <div class="flex flex-wrap gap-1 mb-3">
+                                            {% if item.is_vegetarian %}
+                                            <div class="badge badge-success badge-sm">🌱 Vegetarian</div>
+                                            {% endif %}
+                                            {% if item.is_vegan %}
+                                            <div class="badge badge-success badge-sm">🌿 Vegan</div>
+                                            {% endif %}
+                                            {% if item.is_spicy %}
+                                            <div class="badge badge-warning badge-sm">🌶️ Spicy</div>
+                                            {% endif %}
+                                            {% if item.calories %}
+                                            <div class="badge badge-ghost badge-sm">{{ item.calories }} cal</div>
+                                            {% endif %}
+                                        </div>
+
+                                        <!-- Add to Cart Button -->
+                                        <button
+                                            class="btn btn-primary btn-sm btn-block"
+                                            onclick="addToCart({{ item.id }}, '{{ item.name|escapejs }}', {{ item.price }}, {{ table.number }})"
+                                        >
+                                            Add to Cart
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-12">
+                    <div class="text-6xl mb-4">🍽️</div>
+                    <p class="text-base-content/60">No food vendors available at the moment</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Floating Cart -->
+        <div id="cart-float" class="fixed bottom-6 right-6 z-50 hidden">
+            <div class="card bg-primary text-primary-content shadow-2xl">
+                <div class="card-body p-4">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6h9.5M7 13h10"></path>
+                        </svg>
+                        <div></div>
+                            <div class="font-bold">Cart</div>
+                            <div class="text-sm" id="cart-summary">0 items - $0.00</div>
+                        </div>
+                        <button class="btn btn-sm btn-accent" onclick="viewCart()">
+                            View
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Toast -->
+        <div id="success-toast" class="toast toast-top toast-end hidden">
+            <div class="alert alert-success">
+                <svg class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span id="success-message">Item added to cart!</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Simple cart management
+let cart = {
+    items: [],
+    total: 0,
+    count: 0
+};
+
+// Load cart from localStorage
+function loadCart() {
+    const savedCart = localStorage.getItem('cart_table_{{ table.number }}');
+    if (savedCart) {
+        try {
+            cart = JSON.parse(savedCart);
+            updateCartDisplay();
+        } catch (e) {
+            console.error('Error loading cart:', e);
+        }
+    }
+}
+
+// Save cart to localStorage
+function saveCart() {
+    localStorage.setItem('cart_table_{{ table.number }}', JSON.stringify(cart));
+}
+
+// Add item to cart
+async function addToCart(itemId, itemName, itemPrice, tableNumber) {
+    try {
+        const response = await fetch('/api/add-to-cart/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                menu_item_id: itemId,
+                quantity: 1,
+                table_number: tableNumber
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            // Update local cart
+            const existingItem = cart.items.find(item => item.id === itemId);
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.items.push({
+                    id: itemId,
+                    name: itemName,
+                    price: parseFloat(itemPrice),
+                    quantity: 1
+                });
+            }
+
+            cart.count = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+            cart.total = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            saveCart();
+            updateCartDisplay();
+            showSuccessToast(`Added ${itemName} to cart`);
+        } else {
+            throw new Error(data.error || 'Failed to add item to cart');
+        }
+    } catch (error) {
+        console.error('Error adding to cart:', error);
+        showErrorToast('Failed to add item to cart');
+    }
+}
+
+// Update cart display
+function updateCartDisplay() {
+    const cartFloat = document.getElementById('cart-float');
+    const cartSummary = document.getElementById('cart-summary');
+
+    if (cart.count > 0) {
+        cartFloat.classList.remove('hidden');
+        cartSummary.textContent = `${cart.count} items - $${cart.total.toFixed(2)}`;
+    } else {
+        cartFloat.classList.add('hidden');
+    }
+}
+
+// View cart
+function viewCart() {
+    window.location.href = `/table/{{ table.number }}/checkout/`;
+}
+
+// Show success toast
+function showSuccessToast(message) {
+    const toast = document.getElementById('success-toast');
+    const messageEl = document.getElementById('success-message');
+    messageEl.textContent = message;
+    toast.classList.remove('hidden');
+    setTimeout(() => {
+        toast.classList.add('hidden');
+    }, 3000);
+}
+
+// Show error toast
+function showErrorToast(message) {
+    // Create error toast if it doesn't exist
+    let errorToast = document.getElementById('error-toast');
+    if (!errorToast) {
+        errorToast = document.createElement('div');
+        errorToast.id = 'error-toast';
+        errorToast.className = 'toast toast-top toast-end';
+        errorToast.innerHTML = `
+            <div class="alert alert-error">
+                <svg class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span id="error-message">${message}</span>
+            </div>
+        `;
+        document.body.appendChild(errorToast);
+    } else {
+        document.getElementById('error-message').textContent = message;
+        errorToast.classList.remove('hidden');
+    }
+
+    setTimeout(() => {
+        errorToast.classList.add('hidden');
+    }, 3000);
+}
+
+// Reset selection and clear all data
+function resetSelection() {
+    if (confirm('Are you sure you want to reset? This will clear your cart and return to table selection.')) {
+        // Clear localStorage
+        localStorage.removeItem('cart_table_{{ table.number }}');
+        localStorage.removeItem('selectedTable');
+        localStorage.removeItem('customerPhone');
+
+        // Clear session by making a request to clear session
+        fetch('/api/clear-session/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        }).then(() => {
+            // Redirect to table selection
+            window.location.href = '/';
+        }).catch(() => {
+            // If API call fails, still redirect
+            window.location.href = '/';
+        });
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadCart();
+
+    // Add CSRF token if not present
+    if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrfmiddlewaretoken';
+        csrfToken.value = '{{ csrf_token }}';
+        document.body.appendChild(csrfToken);
+    }
+});
+</script>
+{% endblock %}

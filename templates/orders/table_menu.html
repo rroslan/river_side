@@ -1,0 +1,1956 @@
+{% extends 'base.html' %} {% load static %} {% block title %}River Side Food
+Court - Menu{% endblock %} {% block extra_css %}
+<style>
+    .vendor-card {
+        transition: all 0.3s ease;
+    }
+    .vendor-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .menu-item-card {
+        transition: all 0.2s ease;
+    }
+    .menu-item-card:hover {
+        transform: scale(1.02);
+    }
+
+    .cart-floating {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 100;
+        transform: translateY(100px);
+        transition: transform 0.3s ease;
+    }
+
+    .cart-floating.show {
+        transform: translateY(0);
+    }
+
+    /* Order status specific styles */
+    .order-status-pending {
+        border-left: 4px solid #f59e0b;
+        background-color: rgba(245, 158, 11, 0.1);
+    }
+
+    .order-status-confirmed {
+        border-left: 4px solid #3b82f6;
+        background-color: rgba(59, 130, 246, 0.1);
+    }
+
+    .order-status-preparing {
+        border-left: 4px solid #8b5cf6;
+        background-color: rgba(139, 92, 246, 0.1);
+    }
+
+    .order-status-ready {
+        border-left: 4px solid #10b981;
+        background-color: rgba(16, 185, 129, 0.1);
+    }
+
+    .order-status-delivered {
+        border-left: 4px solid #6b7280;
+        background-color: rgba(107, 114, 128, 0.1);
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .status-pending .status-dot {
+        background-color: #f59e0b;
+    }
+    .status-confirmed .status-dot {
+        background-color: #3b82f6;
+    }
+    .status-preparing .status-dot {
+        background-color: #8b5cf6;
+    }
+    .status-ready .status-dot {
+        background-color: #10b981;
+    }
+    .status-delivered .status-dot {
+        background-color: #6b7280;
+    }
+
+    .table-selector {
+        position: sticky;
+        top: 70px;
+        z-index: 50;
+        backdrop-filter: blur(10px);
+        background: rgba(0, 0, 0, 0.1);
+    }
+
+    .pulse-ring {
+        animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+
+    @keyframes pulse-ring {
+        0% {
+            transform: scale(0.33);
+        }
+        80%,
+        100% {
+            opacity: 0;
+            transform: scale(1.33);
+        }
+    }
+
+    .category-nav {
+        scroll-behavior: smooth;
+    }
+
+    .spicy-indicator {
+        color: #ff6b35;
+        animation: glow 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow {
+        from {
+            text-shadow: 0 0 5px #ff6b35;
+        }
+        to {
+            text-shadow:
+                0 0 20px #ff6b35,
+                0 0 30px #ff6b35;
+        }
+    }
+</style>
+{% endblock %} {% block content %}
+<div class="min-h-screen bg-gray-900" x-data="menuApp()" x-init="init()">
+    <!-- Hero Section -->
+    <div
+        class="hero min-h-[60vh] bg-gradient-to-br from-primary/20 via-secondary/10 to-accent/20"
+    >
+        <div class="hero-content text-center">
+            <div class="max-w-4xl">
+                <h1
+                    class="text-6xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-6"
+                >
+                    River Side Food Court
+                </h1>
+                <p class="text-xl text-base-content/80 mb-8">
+                    Delicious food and refreshing drinks from multiple vendors,
+                    all in one place
+                </p>
+
+                <!-- Loading Indicator -->
+                <div x-show="loading" class="mb-4">
+                    <div class="alert">
+                        <span class="loading loading-spinner loading-sm"></span>
+                        <span>Loading your session...</span>
+                    </div>
+                </div>
+
+                <!-- Debug Info -->
+                <div class="mb-4">
+                    <div class="text-xs text-gray-500">
+                        Debug: selectedTable=<span
+                            x-text="selectedTable?.number || 'none'"
+                        ></span
+                        >, hasSavedData=<span x-text="hasSavedData"></span>,
+                        loading=<span x-text="loading"></span>,
+                        showPhoneInput=<span x-text="showPhoneInput"></span>
+                    </div>
+                </div>
+
+                <!-- Table Selection -->
+                <div x-show="!selectedTable || showTableSelector" class="mb-8">
+                    <h2 class="text-2xl font-semibold mb-4">
+                        <span x-show="!showTableSelector"
+                            >Select Your Table to Get Started</span
+                        >
+                        <span x-show="showTableSelector"
+                            >Choose a New Table</span
+                        >
+                    </h2>
+                    <div
+                        class="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3 max-w-2xl mx-auto"
+                    >
+                        <template
+                            x-for="table in availableTables"
+                            :key="table.number"
+                        >
+                            <button
+                                @click="selectNewTable(table)"
+                                :disabled="table.occupied"
+                                :class="table.occupied ? 'btn-disabled opacity-50' : 'btn-primary hover:scale-110'"
+                                class="btn btn-lg aspect-square"
+                            >
+                                <div class="text-center">
+                                    <div
+                                        class="text-xl font-bold"
+                                        x-text="table.number"
+                                    ></div>
+                                    <div
+                                        class="text-xs"
+                                        x-text="table.occupied ? 'Busy' : 'Free'"
+                                    ></div>
+                                </div>
+                            </button>
+                        </template>
+                    </div>
+                    <p class="text-sm text-base-content/60 mt-4">
+                        <span x-show="!showTableSelector"
+                            >Choose an available table to start browsing our
+                            menu</span
+                        >
+                        <span x-show="showTableSelector"
+                            >Select a different table to continue with your
+                            order</span
+                        >
+                    </p>
+                    <div x-show="showTableSelector" class="mt-4">
+                        <button
+                            @click="cancelTableChange()"
+                            class="btn btn-outline btn-sm"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Phone Number Modal -->
+                <div
+                    x-show="showPhoneInput"
+                    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+                    style="z-index: 9999"
+                    x-transition
+                >
+                    <div
+                        class="bg-base-100 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl"
+                        @click.stop
+                    >
+                        <h3 class="font-bold text-xl mb-4 text-base-content">
+                            📱 Table
+                            <span x-text="pendingTable?.number || '?'"></span>
+                        </h3>
+                        <p class="mb-6 text-base-content/80">
+                            Please enter your phone number to proceed with your
+                            order:
+                        </p>
+
+                        <div class="mb-6">
+                            <label
+                                class="block text-sm font-medium text-base-content mb-2"
+                                >Phone Number</label
+                            >
+                            <input
+                                type="tel"
+                                x-model="customerPhone"
+                                placeholder="e.g. +60123456789"
+                                class="input input-bordered w-full text-lg"
+                                @keyup.enter="confirmTableSelection()"
+                                x-ref="phoneInput"
+                            />
+                            <p class="text-xs text-base-content/60 mt-1">
+                                Minimum 8 digits required
+                            </p>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button
+                                class="btn btn-ghost flex-1"
+                                @click="cancelTableSelection()"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                class="btn btn-primary flex-1"
+                                @click="confirmTableSelection()"
+                                :disabled="!customerPhone || customerPhone.length < 8"
+                            >
+                                Continue →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected Table Info -->
+                <div
+                    x-show="selectedTable"
+                    class="table-selector p-4 rounded-lg mb-8"
+                >
+                    <div
+                        class="flex items-center justify-center gap-4 flex-wrap"
+                    >
+                        <div class="badge badge-primary badge-lg">
+                            Table <span x-text="selectedTable?.number"></span>
+                        </div>
+                        <div class="badge badge-info badge-lg">
+                            📞 <span x-text="customerPhone"></span>
+                        </div>
+                        <button
+                            @click="openItemsStatus()"
+                            class="btn btn-primary btn-sm"
+                            title="View cart items and order status"
+                        >
+                            📊 Items Status
+                        </button>
+                        <button
+                            @click="showTableChange()"
+                            class="btn btn-outline btn-sm"
+                        >
+                            Change Table
+                        </button>
+                        <button
+                            @click="resetSession()"
+                            class="btn btn-error btn-sm"
+                            title="Clear all saved data and start fresh"
+                        >
+                            🔄 Reset All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Section -->
+    <div id="menu" x-show="selectedTable" class="py-12">
+        <div class="container mx-auto px-4">
+            <!-- Drinks Section -->
+            <div x-show="selectedTable">
+                <div>
+                    <h3 class="text-2xl font-bold mb-6 text-blue-600">
+                        🥤 Drinks
+                    </h3>
+
+                    <!-- Fresh Juice & Coffee Bar -->
+                    <div class="vendor-card card bg-gray-800 shadow-xl mb-8">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 class="card-title text-2xl text-white">
+                                        Fresh Juice & Coffee Bar
+                                    </h3>
+                                    <p class="text-gray-300">
+                                        Fresh squeezed juices, smoothies, coffee
+                                        and tea
+                                    </p>
+                                </div>
+                                <div class="text-4xl">🥤</div>
+                            </div>
+
+                            <!-- Fresh Juices -->
+                            <div class="mb-8">
+                                <h4
+                                    class="text-xl font-semibold mb-4 flex items-center text-white"
+                                >
+                                    <span>Fresh Juices</span>
+                                    <div class="badge badge-outline ml-2">
+                                        5 items
+                                    </div>
+                                </h4>
+                                <div
+                                    class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"
+                                >
+                                    <div
+                                        class="menu-item-card card bg-gray-700 shadow-lg hover:shadow-xl"
+                                    >
+                                        <div class="card-body p-4">
+                                            <div
+                                                class="flex justify-between items-start mb-2"
+                                            >
+                                                <h5
+                                                    class="card-title text-lg text-white"
+                                                >
+                                                    Orange Juice
+                                                </h5>
+                                                <div
+                                                    class="text-lg font-bold text-green-400"
+                                                >
+                                                    $4.50
+                                                </div>
+                                            </div>
+                                            <p
+                                                class="text-sm text-gray-300 mb-3"
+                                            >
+                                                Freshly squeezed orange juice
+                                            </p>
+                                            <div
+                                                class="flex flex-wrap gap-1 mb-3"
+                                            >
+                                                <div
+                                                    class="badge badge-success badge-sm"
+                                                >
+                                                    🌱 Vegetarian
+                                                </div>
+                                                <div
+                                                    class="badge badge-success badge-sm"
+                                                >
+                                                    🌿 Vegan
+                                                </div>
+                                                <div
+                                                    class="badge badge-outline badge-sm"
+                                                >
+                                                    110 cal
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="card-actions justify-end"
+                                            >
+                                                <button
+                                                    class="btn btn-primary btn-sm"
+                                                    @click="addToCart({id: 1, name: 'Orange Juice', price: '4.50'})"
+                                                >
+                                                    Add to Cart
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="menu-item-card card bg-gray-700 shadow-lg hover:shadow-xl"
+                                    >
+                                        <div class="card-body p-4">
+                                            <div
+                                                class="flex justify-between items-start mb-2"
+                                            >
+                                                <h5
+                                                    class="card-title text-lg text-white"
+                                                >
+                                                    Apple Juice
+                                                </h5>
+                                                <div
+                                                    class="text-lg font-bold text-green-400"
+                                                >
+                                                    $4.00
+                                                </div>
+                                            </div>
+                                            <p
+                                                class="text-sm text-gray-300 mb-3"
+                                            >
+                                                Fresh apple juice with no added
+                                                sugar
+                                            </p>
+                                            <div
+                                                class="flex flex-wrap gap-1 mb-3"
+                                            >
+                                                <div
+                                                    class="badge badge-success badge-sm"
+                                                >
+                                                    🌱 Vegetarian
+                                                </div>
+                                                <div
+                                                    class="badge badge-success badge-sm"
+                                                >
+                                                    🌿 Vegan
+                                                </div>
+                                                <div
+                                                    class="badge badge-outline badge-sm"
+                                                >
+                                                    95 cal
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="card-actions justify-end"
+                                            >
+                                                <button
+                                                    class="btn btn-primary btn-sm"
+                                                    @click="addToCart({id: 2, name: 'Apple Juice', price: '4.00'})"
+                                                >
+                                                    Add to Cart
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="menu-item-card card bg-gray-700 shadow-lg hover:shadow-xl"
+                                    >
+                                        <div class="card-body p-4">
+                                            <div
+                                                class="flex justify-between items-start mb-2"
+                                            >
+                                                <h5
+                                                    class="card-title text-lg text-white"
+                                                >
+                                                    Green Juice
+                                                </h5>
+                                                <div
+                                                    class="text-lg font-bold text-green-400"
+                                                >
+                                                    $6.50
+                                                </div>
+                                            </div>
+                                            <p
+                                                class="text-sm text-gray-300 mb-3"
+                                            >
+                                                Spinach, cucumber, apple, and
+                                                lemon
+                                            </p>
+                                            <div
+                                                class="flex flex-wrap gap-1 mb-3"
+                                            >
+                                                <div
+                                                    class="badge badge-success badge-sm"
+                                                >
+                                                    🌱 Vegetarian
+                                                </div>
+                                                <div
+                                                    class="badge badge-success badge-sm"
+                                                >
+                                                    🌿 Vegan
+                                                </div>
+                                                <div
+                                                    class="badge badge-outline badge-sm"
+                                                >
+                                                    65 cal
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="card-actions justify-end"
+                                            >
+                                                <button
+                                                    class="btn btn-primary btn-sm"
+                                                    @click="addToCart({id: 3, name: 'Green Smoothie', price: '6.50'})"
+                                                >
+                                                    Add to Cart
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Coffee & Tea -->
+                            <div class="mb-8">
+                                <h4
+                                    class="text-xl font-semibold mb-4 flex items-center text-white"
+                                >
+                                    <span>Coffee & Tea</span>
+                                    <div class="badge badge-outline ml-2">
+                                        6 items
+                                    </div>
+                                </h4>
+                                <div
+                                    class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"
+                                >
+                                    <div
+                                        class="menu-item-card card bg-gray-700 shadow-lg hover:shadow-xl"
+                                    >
+                                        <div class="card-body p-4">
+                                            <div
+                                                class="flex justify-between items-start mb-2"
+                                            >
+                                                <h5
+                                                    class="card-title text-lg text-white"
+                                                >
+                                                    Cappuccino
+                                                </h5>
+                                                <div
+                                                    class="text-lg font-bold text-green-400"
+                                                >
+                                                    $3.50
+                                                </div>
+                                            </div>
+                                            <p
+                                                class="text-sm text-gray-300 mb-3"
+                                            >
+                                                Rich espresso with steamed milk
+                                                foam
+                                            </p>
+                                            <div
+                                                class="flex flex-wrap gap-1 mb-3"
+                                            >
+                                                <div
+                                                    class="badge badge-success badge-sm"
+                                                >
+                                                    🌱 Vegetarian
+                                                </div>
+                                                <div
+                                                    class="badge badge-outline badge-sm"
+                                                >
+                                                    120 cal
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="card-actions justify-end"
+                                            >
+                                                <button
+                                                    class="btn btn-primary btn-sm"
+                                                    @click="addToCart({id: 4, name: 'Americano', price: '3.50'})"
+                                                >
+                                                    Add to Cart
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="menu-item-card card bg-gray-700 shadow-lg hover:shadow-xl"
+                                    >
+                                        <div class="card-body p-4">
+                                            <div
+                                                class="flex justify-between items-start mb-2"
+                                            >
+                                                <h5
+                                                    class="card-title text-lg text-white"
+                                                >
+                                                    Latte
+                                                </h5>
+                                                <div
+                                                    class="text-lg font-bold text-green-400"
+                                                >
+                                                    $4.00
+                                                </div>
+                                            </div>
+                                            <p
+                                                class="text-sm text-gray-300 mb-3"
+                                            >
+                                                Smooth espresso with steamed
+                                                milk
+                                            </p>
+                                            <div
+                                                class="flex flex-wrap gap-1 mb-3"
+                                            >
+                                                <div
+                                                    class="badge badge-success badge-sm"
+                                                >
+                                                    🌱 Vegetarian
+                                                </div>
+                                                <div
+                                                    class="badge badge-outline badge-sm"
+                                                >
+                                                    150 cal
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="card-actions justify-end"
+                                            >
+                                                <button
+                                                    class="btn btn-primary btn-sm"
+                                                    @click="addToCart({id: 5, name: 'Latte', price: '4.50'})"
+                                                >
+                                                    Add to Cart
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Food Vendors Section -->
+            <div x-show="selectedTable">
+                <h3 class="text-2xl font-bold mb-6 text-orange-600">🍽️ Food</h3>
+
+                <!-- Asian Delights -->
+                <div class="mb-12">
+                    <div class="vendor-card card bg-gray-800 shadow-xl mb-8">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 class="card-title text-2xl text-white">
+                                        Asian Delights
+                                    </h3>
+                                    <p class="text-gray-300">
+                                        Authentic Asian cuisine from Thailand,
+                                        China, and Japan
+                                    </p>
+                                </div>
+                                <div class="text-4xl">🍽️</div>
+                            </div>
+
+                            <!-- Noodles -->
+                            <div class="mb-8">
+                                <h4
+                                    class="text-xl font-semibold mb-4 flex items-center text-white"
+                                >
+                                    <span>Noodles</span>
+                                    <div class="badge badge-outline ml-2">
+                                        5 items
+                                    </div>
+                                </h4>
+                                <div
+                                    class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"
+                                >
+                                    <div
+                                        class="menu-item-card card bg-gray-700 shadow-lg hover:shadow-xl"
+                                    >
+                                        <div class="card-body p-4">
+                                            <div
+                                                class="flex justify-between items-start mb-2"
+                                            >
+                                                <h5
+                                                    class="card-title text-lg flex items-center"
+                                                >
+                                                    <span>Pad Thai</span>
+                                                    <span
+                                                        class="spicy-indicator ml-1"
+                                                        >🌶️</span
+                                                    >
+                                                </h5>
+                                                <div
+                                                    class="text-lg font-bold text-primary"
+                                                >
+                                                    $12.90
+                                                </div>
+                                            </div>
+                                            <p
+                                                class="text-sm text-base-content/70 mb-3"
+                                            >
+                                                Thai stir-fried rice noodles
+                                                with shrimp
+                                            </p>
+                                            <div
+                                                class="flex flex-wrap gap-1 mb-3"
+                                            >
+                                                <div
+                                                    class="badge badge-warning badge-sm"
+                                                >
+                                                    🌶️ Spicy
+                                                </div>
+                                                <div
+                                                    class="badge badge-outline badge-sm"
+                                                >
+                                                    509 cal
+                                                </div>
+                                                <div
+                                                    class="badge badge-info badge-sm"
+                                                >
+                                                    15 min
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="card-actions justify-end"
+                                            >
+                                                <button
+                                                    class="btn btn-primary btn-sm"
+                                                    @click="addToCart({id: 6, name: 'Nasi Lemak', price: '8.50'})"
+                                                >
+                                                    Add to Cart
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="menu-item-card card bg-gray-700 shadow-lg hover:shadow-xl"
+                                    >
+                                        <div class="card-body p-4">
+                                            <div
+                                                class="flex justify-between items-start mb-2"
+                                            >
+                                                <h5 class="card-title text-lg">
+                                                    Chicken Lo Mein
+                                                </h5>
+                                                <div
+                                                    class="text-lg font-bold text-primary"
+                                                >
+                                                    $11.50
+                                                </div>
+                                            </div>
+                                            <p
+                                                class="text-sm text-base-content/70 mb-3"
+                                            >
+                                                Soft noodles with chicken and
+                                                vegetables
+                                            </p>
+                                            <div
+                                                class="flex flex-wrap gap-1 mb-3"
+                                            >
+                                                <div
+                                                    class="badge badge-outline badge-sm"
+                                                >
+                                                    495 cal
+                                                </div>
+                                                <div
+                                                    class="badge badge-info badge-sm"
+                                                >
+                                                    12 min
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="card-actions justify-end"
+                                            >
+                                                <button
+                                                    class="btn btn-primary btn-sm"
+                                                    @click="addToCart({id: 7, name: 'Char Kway Teow', price: '9.00'})"
+                                                >
+                                                    Add to Cart
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Rice Dishes -->
+                            <div class="mb-8">
+                                <h4
+                                    class="text-xl font-semibold mb-4 flex items-center"
+                                >
+                                    <span>Rice Dishes</span>
+                                    <div class="badge badge-outline ml-2">
+                                        4 items
+                                    </div>
+                                </h4>
+                                <div
+                                    class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"
+                                >
+                                    <div
+                                        class="menu-item-card card bg-gray-700 shadow-lg hover:shadow-xl"
+                                    >
+                                        <div class="card-body p-4">
+                                            <div
+                                                class="flex justify-between items-start mb-2"
+                                            >
+                                                <h5 class="card-title text-lg">
+                                                    Chicken Fried Rice
+                                                </h5>
+                                                <div
+                                                    class="text-lg font-bold text-primary"
+                                                >
+                                                    $11.90
+                                                </div>
+                                            </div>
+                                            <p
+                                                class="text-sm text-base-content/70 mb-3"
+                                            >
+                                                Wok-fried rice with chicken and
+                                                vegetables
+                                            </p>
+                                            <div
+                                                class="flex flex-wrap gap-1 mb-3"
+                                            >
+                                                <div
+                                                    class="badge badge-outline badge-sm"
+                                                >
+                                                    551 cal
+                                                </div>
+                                                <div
+                                                    class="badge badge-info badge-sm"
+                                                >
+                                                    12 min
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="card-actions justify-end"
+                                            >
+                                                <button
+                                                    class="btn btn-primary btn-sm"
+                                                    @click="addToCart({id: 8, name: 'Laksa', price: '10.50'})"
+                                                >
+                                                    Add to Cart
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pizza Corner -->
+                <div class="mb-12">
+                    <div class="vendor-card card bg-gray-800 shadow-xl mb-8">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 class="card-title text-2xl text-white">
+                                        Pizza Corner
+                                    </h3>
+                                    <p class="text-gray-300">
+                                        Wood-fired pizzas and Italian favorites
+                                    </p>
+                                </div>
+                                <div class="text-4xl">🍕</div>
+                            </div>
+
+                            <!-- Pizzas -->
+                            <div class="mb-8">
+                                <h4
+                                    class="text-xl font-semibold mb-4 flex items-center text-white"
+                                >
+                                    <span>Pizzas</span>
+                                    <div class="badge badge-outline ml-2">
+                                        6 items
+                                    </div>
+                                </h4>
+                                <div
+                                    class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"
+                                >
+                                    <div
+                                        class="menu-item-card card bg-gray-700 shadow-lg hover:shadow-xl"
+                                    >
+                                        <div class="card-body p-4">
+                                            <div
+                                                class="flex justify-between items-start mb-2"
+                                            >
+                                                <h5 class="card-title text-lg">
+                                                    Margherita
+                                                </h5>
+                                                <div
+                                                    class="text-lg font-bold text-primary"
+                                                >
+                                                    $14.90
+                                                </div>
+                                            </div>
+                                            <p
+                                                class="text-sm text-base-content/70 mb-3"
+                                            >
+                                                Fresh mozzarella, tomato sauce,
+                                                and basil
+                                            </p>
+                                            <div
+                                                class="flex flex-wrap gap-1 mb-3"
+                                            >
+                                                <div
+                                                    class="badge badge-success badge-sm"
+                                                >
+                                                    🌱 Vegetarian
+                                                </div>
+                                                <div
+                                                    class="badge badge-outline badge-sm"
+                                                >
+                                                    258 cal
+                                                </div>
+                                                <div
+                                                    class="badge badge-info badge-sm"
+                                                >
+                                                    18 min
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="card-actions justify-end"
+                                            >
+                                                <button
+                                                    class="btn btn-primary btn-sm"
+                                                    @click="addToCart({id: 9, name: 'Roti Canai', price: '3.50'})"
+                                                >
+                                                    Add to Cart
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="menu-item-card card bg-gray-700 shadow-lg hover:shadow-xl"
+                                    >
+                                        <div class="card-body p-4">
+                                            <div
+                                                class="flex justify-between items-start mb-2"
+                                            >
+                                                <h5 class="card-title text-lg">
+                                                    Pepperoni
+                                                </h5>
+                                                <div
+                                                    class="text-lg font-bold text-primary"
+                                                >
+                                                    $16.90
+                                                </div>
+                                            </div>
+                                            <p
+                                                class="text-sm text-base-content/70 mb-3"
+                                            >
+                                                Classic pepperoni with
+                                                mozzarella cheese
+                                            </p>
+                                            <div
+                                                class="flex flex-wrap gap-1 mb-3"
+                                            >
+                                                <div
+                                                    class="badge badge-outline badge-sm"
+                                                >
+                                                    302 cal
+                                                </div>
+                                                <div
+                                                    class="badge badge-info badge-sm"
+                                                >
+                                                    18 min
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="card-actions justify-end"
+                                            >
+                                                <button
+                                                    class="btn btn-primary btn-sm"
+                                                    @click="addToCart({id: 10, name: 'Chicken Rice', price: '7.50'})"
+                                                >
+                                                    Add to Cart
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Add more menu items notice -->
+                        <div class="text-center py-8">
+                            <div
+                                class="card bg-gray-700 shadow-lg max-w-md mx-auto"
+                            >
+                                <div class="card-body">
+                                    <h3 class="card-title text-white">
+                                        More Items Available!
+                                    </h3>
+                                    <p class="text-sm text-gray-300">
+                                        This is a sample of our menu. More
+                                        delicious items are available when you
+                                        place your order.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Info -->
+    <div class="fixed bottom-32 right-6 z-40 bg-black text-white text-xs p-2 rounded" style="font-size: 10px;">
+        <div>Table: <span x-text="selectedTable?.number || 'None'"></span></div>
+        <div>Cart Items: <span x-text="cart.items.length"></span></div>
+        <div>Orders: <span x-text="(itemsStatus && itemsStatus.orders) ? itemsStatus.orders.length : 0"></span></div>
+        <div>Show Cart: <span x-text="showCart ? 'Yes' : 'No'"></span></div>
+        <div>Button Visible: <span x-text="(cart.items.length > 0 || hasActiveOrders()) ? 'Yes' : 'No'"></span></div>
+        <div>itemsStatus exists: <span x-text="itemsStatus ? 'Yes' : 'No'"></span></div>
+    </div>
+
+    <!-- Manual Test Button -->
+    <div class="fixed bottom-48 right-6 z-50">
+        <button @click="console.log('🧪 Manual test button clicked!'); showCart = true; console.log('🧪 showCart is now:', showCart)" class="btn btn-error btn-sm">
+            🧪 Test Modal
+        </button>
+    </div>
+
+    <!-- Floating Cart Button -->
+    <div
+        x-show="cart.items.length > 0 || hasActiveOrders()"
+        class="cart-floating show"
+    >
+        <button
+            @click="console.log('🛒 Table cart clicked!', {cart: cart, itemsStatus: itemsStatus, showCart: showCart}); openItemsStatus()"
+            class="btn btn-primary btn-lg rounded-full shadow-2xl"
+        >
+            <div class="indicator">
+                <svg
+                    class="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6.5-5H17"
+                    ></path>
+                </svg>
+                <span
+                    class="badge badge-secondary indicator-item"
+                    x-text="cart.items.length"
+                ></span>
+            </div>
+            <span class="ml-2"></span>
+                <span x-show="cart.items.length > 0">$<span x-text="cart.total.toFixed(2)"></span></span>
+                <span x-show="cart.items.length === 0 && hasActiveOrders()">Orders</span>
+            </span>
+        </button>
+    </div>
+
+    <!-- Minimalist Items Status Modal -->
+    <div
+        x-show="showCart"
+        class="modal modal-open"
+        @click.self="showCart = false"
+        x-transition
+        style="z-index: 9999;"
+    >
+        <div class="modal-box max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Items Status</h3>
+                <button
+                    @click="showCart = false"
+                    class="btn btn-ghost btn-sm btn-circle"
+                >
+                    ✕
+                </button>
+            </div>
+
+            <!-- Table Badge -->
+            <div x-show="selectedTable" class="badge badge-primary mb-4">
+                Table <span x-text="selectedTable?.number"></span>
+            </div>
+
+            <!-- Loading -->
+            <div x-show="loading" class="text-center py-4">
+                <div class="loading loading-spinner loading-md"></div>
+            </div>
+
+            <!-- Cart Items -->
+            <div x-show="!loading && cart.items.length > 0" class="mb-4">
+                <h4 class="text-sm font-medium text-gray-600 mb-2">Cart</h4>
+                <div class="space-y-2">
+                    <template x-for="item in cart.items" :key="item.id">
+                        <div
+                            class="flex items-center justify-between p-2 bg-gray-50 rounded"
+                        >
+                            <div class="flex-1">
+                                <div
+                                    class="font-medium text-sm"
+                                    x-text="item.quantity + 'x ' + item.name"
+                                ></div>
+                                <div class="text-xs text-gray-500">
+                                    $<span
+                                        x-text="(item.price * item.quantity).toFixed(2)"
+                                    ></span>
+                                </div>
+                            </div>
+                            <button
+                                @click="removeFromCart(item.id)"
+                                class="btn btn-ghost btn-xs text-error"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Active Orders -->
+            <div
+                x-show="!loading && itemsStatus && itemsStatus.orders && itemsStatus.orders.length > 0"
+                class="mb-4"
+            >
+                <h4 class="text-sm font-medium text-gray-600 mb-2">Orders</h4>
+                <div class="space-y-2">
+                    <template
+                        x-for="order in itemsStatus.orders"
+                        :key="order.id"
+                    >
+                        <div class="p-2 bg-gray-50 rounded">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="text-xs text-gray-500">
+                                    #<span
+                                        x-text="order.id.substring(0, 8)"
+                                    ></span>
+                                </div>
+                                <div
+                                    class="badge badge-xs"
+                                    :class="getStatusBadgeClass(order.status)"
+                                    x-text="order.status"
+                                ></div>
+                            </div>
+                            <template
+                                x-for="item in order.items"
+                                :key="item.id"
+                            >
+                                <div class="flex items-center justify-between">
+                                    <div class="flex-1">
+                                        <div
+                                            class="font-medium text-sm"
+                                            x-text="item.quantity + 'x ' + item.name"
+                                        ></div>
+                                        <div
+                                            class="text-xs"
+                                            :class="getStatusTextClass(item.status)"
+                                            x-text="item.status"
+                                        ></div>
+                                    </div>
+                                    <button
+                                        x-show="['pending', 'confirmed'].includes(item.status)"
+                                        @click="cancelOrderItem(item.id)"
+                                        class="btn btn-ghost btn-xs text-error"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div
+                x-show="!loading && cart.items.length === 0 && (!itemsStatus || !itemsStatus.orders || itemsStatus.orders.length === 0)"
+                class="text-center py-8"
+            >
+                <div class="text-4xl mb-2">🛒</div>
+                <p class="text-sm text-gray-500">No items</p>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-2 pt-4">
+                <button
+                    x-show="cart.items.length > 0"
+                    @click="showOrderModal = true; showCart = false"
+                    class="btn btn-primary btn-sm flex-1"
+                >
+                    Make Order
+                </button>
+                <button
+                    @click="showCart = false"
+                    class="btn btn-outline btn-sm flex-1"
+                >
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Modal -->
+    <div
+        x-show="showOrderModal"
+        class="modal modal-open"
+        @click.self="showOrderModal = false"
+    >
+        <div class="modal-box">
+            <h3 class="text-2xl font-bold mb-6">Complete Your Order</h3>
+
+            <form @submit.prevent="placeOrder()">
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">Your Name</span>
+                    </label>
+                    <input
+                        x-model="orderForm.customerName"
+                        type="text"
+                        class="input input-bordered"
+                        required
+                    />
+                </div>
+
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">Phone Number</span>
+                    </label>
+                    <input
+                        x-model="orderForm.customerPhone"
+                        type="tel"
+                        class="input input-bordered"
+                        readonly
+                    />
+                </div>
+
+                <div class="form-control mb-6">
+                    <label class="label">
+                        <span class="label-text"
+                            >Special Instructions (Optional)</span
+                        >
+                    </label>
+                    <textarea
+                        x-model="orderForm.notes"
+                        class="textarea textarea-bordered"
+                        rows="3"
+                    ></textarea>
+                </div>
+
+                <div class="flex gap-2">
+                    <button
+                        type="button"
+                        @click="showOrderModal = false"
+                        class="btn btn-outline flex-1"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        :disabled="placing"
+                        class="btn btn-primary flex-1"
+                    >
+                        <span x-show="!placing">Place Order</span>
+                        <span
+                            x-show="placing"
+                            class="loading loading-spinner loading-sm"
+                        ></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Padding for Scrolling -->
+<div class="h-32"></div>
+
+<script>
+    // Emergency fix for hanging modals
+    function clearAllModals() {
+        // Remove all modal classes
+        document.querySelectorAll(".modal").forEach((modal) => {
+            modal.classList.remove("modal-open");
+            modal.style.display = "none";
+        });
+
+        // Clear localStorage
+        localStorage.removeItem("selectedTable");
+
+        // Remove any modal backdrop
+        document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+            backdrop.remove();
+        });
+
+        console.log("All modals cleared");
+    }
+
+    // Run immediately to clear any stuck modals
+    clearAllModals();
+
+    // Force dark theme permanently
+    document.addEventListener("DOMContentLoaded", function () {
+        document.documentElement.setAttribute("data-theme", "dark");
+        localStorage.setItem("theme", "dark");
+
+        // Clear modals again after DOM loads
+        setTimeout(clearAllModals, 100);
+    });
+
+    function menuApp() {
+        return {
+            // State
+            selectedTable: null,
+            availableTables: [],
+            drinksVendors: [],
+            foodVendors: [],
+            cart: { items: [], total: 0 },
+            showCart: false,
+            placing: false,
+            showPhoneInput: false,
+            pendingTable: null,
+            customerPhone: "",
+            hasSavedData: false,
+            loading: true,
+            showTableSelector: false,
+            orderForm: {
+                customerName: "",
+                customerPhone: "",
+                notes: "",
+            },
+            itemsStatus: { cart: { items: [], count: 0, total: "0.00" }, orders: [] },
+            socket: null,
+
+            async init() {
+                console.log("Initializing menu app...");
+                this.loading = true;
+
+                await this.loadTables();
+                await this.loadVendors();
+
+                // Load saved table and phone data
+                const savedTable = localStorage.getItem("selectedTable");
+                const savedPhone = localStorage.getItem("customerPhone");
+                const savedCart = localStorage.getItem("cart");
+
+                // Check if there's any saved data
+                this.hasSavedData = !!(savedTable || savedPhone || savedCart);
+
+                if (savedTable && savedPhone) {
+                    this.selectedTable = JSON.parse(savedTable);
+                    this.customerPhone = savedPhone;
+                    this.orderForm.customerPhone = savedPhone;
+
+                    // Show success message for restored session
+                    setTimeout(() => {
+                        this.showSuccessToast(
+                            `Session restored - Table ${this.selectedTable.number}`,
+                        );
+                    }, 500);
+                    // Load items status for the restored table
+                    await this.loadItemsStatus();
+                }
+
+                // Load cart if available
+                if (savedCart) {
+                    this.cart = JSON.parse(savedCart);
+                    this.updateCartTotal();
+                }
+
+                this.loading = false;
+                // Load initial items status to show existing orders
+                await this.loadItemsStatus();
+                console.log("Menu app initialized");
+            },
+
+            async loadTables() {
+                try {
+                    const response = await fetch("/api/tables/");
+                    if (response.ok) {
+                        this.availableTables = await response.json();
+                    } else {
+                        // Mock data for demo
+                        this.availableTables = Array.from(
+                            { length: 20 },
+                            (_, i) => ({
+                                number: i + 1,
+                                occupied: Math.random() < 0.3, // 30% chance of being occupied
+                                seats: 4,
+                            }),
+                        );
+                    }
+                } catch (error) {
+                    console.error("Error loading tables:", error);
+                    // Mock data fallback
+                    this.availableTables = Array.from(
+                        { length: 20 },
+                        (_, i) => ({
+                            number: i + 1,
+                            occupied: Math.random() < 0.3,
+                            seats: 4,
+                        }),
+                    );
+                }
+            },
+
+            async loadVendors() {
+                console.log("🏪 Starting to load vendors...");
+
+                // Initialize with empty arrays to prevent errors
+                this.drinksVendors = [];
+                this.foodVendors = [];
+
+                try {
+                    // Load real vendor data from JSON script tags
+                    const drinksData = document.getElementById("drinks-vendors-data");
+                    const foodData = document.getElementById("food-vendors-data");
+
+                    console.log("📄 Script elements found:", {
+                        drinks: !!drinksData,
+                        food: !!foodData,
+                    });
+
+                    if (drinksData && drinksData.textContent.trim()) {
+                        console.log("📝 Raw drinks data preview:", drinksData.textContent.substring(0, 100) + "...");
+                        const drinksText = drinksData.textContent.trim();
+                        if (drinksText && drinksText !== 'None' && drinksText !== '[]') {
+                            this.drinksVendors = JSON.parse(drinksText);
+                            console.log("✅ Loaded drinks vendors:", this.drinksVendors.length);
+                        }
+                    }
+
+                    if (foodData && foodData.textContent.trim()) {
+                        console.log("📝 Raw food data preview:", foodData.textContent.substring(0, 100) + "...");
+                        console.log("📝 Character at position 7:", foodData.textContent.charCodeAt(7), "which is:", JSON.stringify(foodData.textContent[7]));
+                        const foodText = foodData.textContent.trim();
+                        if (foodText && foodText !== 'None' && foodText !== '[]') {
+                            this.foodVendors = JSON.parse(foodText);
+                            console.log("✅ Loaded food vendors:", this.foodVendors.length);
+                        }
+                    }
+                } catch (e) {
+                    console.error("❌ Error loading vendors:", e);
+                    console.error("❌ Using fallback empty arrays");
+                    this.drinksVendors = [];
+                    this.foodVendors = [];
+                }
+
+                console.log("🎯 Final vendor counts - Drinks:", this.drinksVendors.length, "Food:", this.foodVendors.length);
+
+                // Add test items to cart for debugging floating cart
+                console.log("🧪 Adding test items to cart for floating cart testing...");
+                this.cart.items = [
+                    { id: 1, name: 'Test Burger', price: 8.50, quantity: 1 },
+                    { id: 2, name: 'Test Fries', price: 4.00, quantity: 2 }
+                ];
+                this.updateCartTotal();
+                console.log("🧪 Test cart items added:", this.cart);
+            },
+
+                // Force reactivity update
+                this.$nextTick(() => {
+                    console.log(
+                        "🔄 After nextTick - Drinks:",
+                        this.drinksVendors.length,
+                        "Food:",
+                        this.foodVendors.length,
+                    );
+                });
+            },
+
+            showPhoneModal(table) {
+                if (table.occupied) return;
+
+                console.log("Showing phone modal for table:", table.number);
+                this.pendingTable = table;
+                this.customerPhone = "";
+                this.showPhoneInput = true;
+
+                console.log("showPhoneInput set to:", this.showPhoneInput);
+                console.log("pendingTable:", this.pendingTable);
+
+                // Focus on phone input after modal opens
+                setTimeout(() => {
+                    const phoneInput = this.$refs.phoneInput;
+                    if (phoneInput) {
+                        phoneInput.focus();
+                        console.log("Phone input focused");
+                    } else {
+                        console.log("Phone input not found");
+                    }
+                }, 100);
+            },
+
+            confirmTableSelection() {
+                if (!this.customerPhone || this.customerPhone.length < 8)
+                    return;
+
+                this.selectedTable = this.pendingTable;
+                this.orderForm.customerPhone = this.customerPhone;
+
+                // Store table and phone info
+                localStorage.setItem(
+                    "selectedTable",
+                    JSON.stringify(this.selectedTable),
+                );
+                localStorage.setItem("customerPhone", this.customerPhone);
+
+                // Close modal
+                this.showPhoneInput = false;
+                this.pendingTable = null;
+
+                console.log(
+                    "Table selected:",
+                    this.selectedTable.number,
+                    "Phone:",
+                    this.customerPhone,
+                );
+
+                // Smooth scroll to menu
+                setTimeout(() => {
+                    document
+                        .getElementById("menu")
+                        ?.scrollIntoView({ behavior: "smooth" });
+                }, 100);
+            },
+
+            cancelTableSelection() {
+                this.showPhoneInput = false;
+                this.pendingTable = null;
+                this.customerPhone = "";
+            },
+
+            selectTable(table) {
+                // This function is now replaced by the phone modal flow
+                this.showPhoneModal(table);
+            },
+
+            selectNewTable(table) {
+                if (table.occupied) return;
+
+                // If no phone number exists, show phone modal
+                if (!this.customerPhone) {
+                    this.showPhoneModal(table);
+                    return;
+                }
+
+                // If phone exists, directly select new table
+                this.selectedTable = table;
+                this.showTableSelector = false;
+
+                // Update localStorage with new table
+                localStorage.setItem("selectedTable", JSON.stringify(table));
+
+                this.showSuccessToast(`Table changed to ${table.number}`);
+
+                // Smooth scroll to menu
+                setTimeout(() => {
+                    document
+                        .getElementById("menu")
+                        ?.scrollIntoView({ behavior: "smooth" });
+                }, 100);
+            },
+
+            showTableChange() {
+                this.showTableSelector = true;
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            },
+
+            cancelTableChange() {
+                this.showTableSelector = false;
+            },
+
+            changeTable() {
+                // Legacy function - now redirects to showTableChange
+                this.showTableChange();
+            },
+
+            resetSession() {
+                // Confirm before resetting if user has items in cart
+                if (this.cart.items.length > 0) {
+                    const itemCount = this.cart.items.length;
+                    const totalValue = this.cart.total.toFixed(2);
+                    const message = `This will clear your cart (${itemCount} items, $${totalValue}) and all saved data. Are you sure?`;
+                    if (!confirm(message)) {
+                        return;
+                    }
+                }
+
+                // Clear all session data
+                this.selectedTable = null;
+                this.customerPhone = "";
+                this.orderForm = {
+                    customerName: "",
+                    customerPhone: "",
+                    notes: "",
+                };
+                this.cart = { items: [], total: 0 };
+                this.showPhoneInput = false;
+                this.pendingTable = null;
+                this.showCart = false;
+                this.placing = false;
+                this.hasSavedData = false;
+                this.loading = false;
+
+                // Clear localStorage
+                localStorage.removeItem("selectedTable");
+                localStorage.removeItem("customerPhone");
+                localStorage.removeItem("cart");
+
+                // Close any open modals
+                document.querySelectorAll(".modal").forEach((modal) => {
+                    modal.classList.remove("modal-open");
+                });
+
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: "smooth" });
+
+                // Show confirmation
+                this.showSuccessToast("Session cleared - Starting fresh!");
+            },
+
+            addToCart(item) {
+                const existingItem = this.cart.items.find(
+                    (i) => i.id === item.id,
+                );
+
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    this.cart.items.push({
+                        id: item.id,
+                        name: item.name,
+                        price: parseFloat(item.price),
+                        quantity: 1,
+                        vendor_name: this.getVendorName(item.id),
+                    });
+                }
+
+                this.updateCartTotal();
+                this.saveCartToStorage();
+                this.showSuccessToast(`${item.name} added to cart`);
+            },
+
+            updateQuantity(itemId, newQuantity) {
+                if (newQuantity <= 0) {
+                    this.removeFromCart(itemId);
+                    return;
+                }
+
+                const item = this.cart.items.find((i) => i.id === itemId);
+                if (item) {
+                    item.quantity = newQuantity;
+                    this.updateCartTotal();
+                    this.saveCartToStorage();
+                }
+            },
+
+            removeFromCart(itemId) {
+                this.cart.items = this.cart.items.filter(
+                    (i) => i.id !== itemId,
+                );
+                this.updateCartTotal();
+                this.saveCartToStorage();
+            },
+
+            updateCartTotal() {
+                this.cart.total = this.cart.items.reduce(
+                    (sum, item) => sum + item.price * item.quantity,
+                    0,
+                );
+            },
+
+            saveCartToStorage() {
+                localStorage.setItem("cart", JSON.stringify(this.cart));
+            },
+
+            loadCartFromStorage() {
+                const savedCart = localStorage.getItem("cart");
+                if (savedCart) {
+                    this.cart = JSON.parse(savedCart);
+                    this.updateCartTotal();
+                }
+            },
+
+            getVendorName(itemId) {
+                // Find vendor name for the item
+                for (const vendor of [
+                    ...this.drinksVendors,
+                    ...this.foodVendors,
+                ]) {
+                    for (const category of vendor.categories) {
+                        const item = category.menu_items.find(
+                            (i) => i.id === itemId,
+                        );
+                        if (item) return vendor.name;
+                    }
+                }
+                return "Unknown Vendor";
+            },
+
+            async placeOrder() {
+                if (this.cart.items.length === 0) return;
+
+                this.placing = true;
+
+                try {
+                    // Use stored phone number if order form phone is empty
+                    const phoneNumber =
+                        this.orderForm.customerPhone || this.customerPhone;
+
+                    // In real implementation, this would call your API
+                    const orderData = {
+                        table_number: this.selectedTable.number,
+                        customer_name: this.orderForm.customerName,
+                        customer_phone: phoneNumber,
+                        notes: this.orderForm.notes,
+                        items: this.cart.items,
+                    };
+
+                    // Simulate API call
+                    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+                    // Clear cart and form (but keep phone number)
+                    this.cart = { items: [], total: 0 };
+                    this.orderForm = {
+                        customerName: "",
+                        customerPhone: this.customerPhone,
+                        notes: "",
+                    };
+                    this.showOrderModal = false;
+
+                    localStorage.removeItem("cart");
+
+                    this.showSuccessToast("Order placed successfully!");
+
+                    // Redirect to tracking page
+                    setTimeout(() => {
+                        window.location.href = `/orders/track/${this.selectedTable.number}/`;
+                    }, 1500);
+                } catch (error) {
+                    console.error("Error placing order:", error);
+                    this.showErrorToast(
+                        "Failed to place order. Please try again.",
+                    );
+                } finally {
+                    this.placing = false;
+                }
+            },
+
+            showSuccessToast(message) {
+                const toast = document.createElement("div");
+                toast.className = "toast toast-top toast-end z-50";
+                toast.innerHTML = `
+                <div class="alert alert-success">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>${message}</span>
+                </div>
+            `;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            },
+
+            showErrorToast(message) {
+                const toast = document.createElement("div");
+                toast.className = "toast toast-top toast-end z-50";
+                toast.innerHTML = `
+                <div class="alert alert-error">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    <span>${message}</span>
+                </div>
+            `;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 5000);
+            },
+
+            async loadItemsStatus() {
+                // Default to table 1 if no table selected
+                const tableNumber = this.selectedTable?.number || 1;
+                console.log(
+                    `📡 Loading items status for table ${tableNumber}...`,
+                );
+
+                this.loading = true;
+                try {
+                    const response = await fetch(
+                        `/api/items-status/${tableNumber}/`,
+                    );
+                    if (response.ok) {
+                        this.itemsStatus = await response.json();
+                        console.log(
+                            "📊 Items status loaded:",
+                            this.itemsStatus,
+                        );
+                    } else {
+                        console.error("Failed to load items status");
+                        this.itemsStatus = {
+                            cart: { items: [], count: 0, total: "0.00" },
+                            orders: [],
+                        };
+                    }
+                } catch (error) {
+                    console.error("Error loading items status:", error);
+                    this.itemsStatus = {
+                        cart: { items: [], count: 0, total: "0.00" },
+                        orders: [],
+                    };
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async openItemsStatus() {
+                console.log("🔄 Opening items status modal...");
+                console.log("🔄 Before: showCart =", this.showCart);
+                console.log("🔄 Cart items:", this.cart.items);
+                console.log("🔄 Has active orders:", this.hasActiveOrders());
+                this.showCart = true;
+                console.log("🔄 After: showCart =", this.showCart);
+
+                // Always load items status, even without a selected table
+                await this.loadItemsStatus();
+
+                if (this.selectedTable) {
+                    console.log(`📋 Selected table: ${this.selectedTable.number}`);
+                    this.connectWebSocket();
+                } else {
+                    console.log("⚠️ No table selected, showing orders for default table");
+                }
+            },
+
+            connectWebSocket() {
+                if (!this.selectedTable || this.socket) return;
+
+                const protocol =
+                    window.location.protocol === "https:" ? "wss:" : "ws:";
+                const wsUrl = `${protocol}//${window.location.host}/ws/orders/table/${this.selectedTable.number}/`;
+
+                this.socket = new WebSocket(wsUrl);
+
+                this.socket.onopen = () => {
+                    console.log("🔌 WebSocket connected for real-time updates");
+                };
+
+                this.socket.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    console.log("📡 WebSocket message:", data);
+
+                    if (
+                        data.type === "order_update" ||
+                        data.type === "order_status_change"
+                    ) {
+                        this.loadItemsStatus();
+                    }
+                };
+
+                this.socket.onclose = () => {
+                    console.log("🔌 WebSocket disconnected");
+                    this.socket = null;
+                };
+
+                this.socket.onerror = (error) => {
+                    console.error("WebSocket error:", error);
+                };
+            },
+
+            disconnectWebSocket() {
+                if (this.socket) {
+                    this.socket.close();
+                    this.socket = null;
+                }
+            },
+
+            formatTime(isoString) {
+                if (!isoString) return "";
+                const date = new Date(isoString);
+                return date.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                });
+            },
+
+            getProgressValue(status) {
+                const statusMap = {
+                    pending: 20,
+                    confirmed: 40,
+                    preparing: 70,
+                    ready: 90,
+                    delivered: 100,
+                };
+                return statusMap[status] || 0;
+            },
+
+            getProgressText(status) {
+                const statusMap = {
+                    pending: "Order received",
+                    confirmed: "Order confirmed",
+                    preparing: "Being prepared",
+                    ready: "Ready for pickup",
+                    delivered: "Completed",
+                };
+                return statusMap[status] || status;
+            },
+
+            getStatusBadgeClass(status) {
+                const statusMap = {
+                    pending: "badge-warning",
+                    confirmed: "badge-info",
+                    preparing: "badge-secondary",
+                    ready: "badge-success",
+                    delivered: "badge-neutral",
+                };
+                return statusMap[status] || "badge-neutral";
+            },
+
+            getStatusTextClass(status) {
+                const statusMap = {
+                    pending: "text-orange-600",
+                    confirmed: "text-blue-600",
+                    preparing: "text-purple-600",
+                    ready: "text-green-600",
+                    delivered: "text-gray-600",
+                };
+                return statusMap[status] || "text-gray-600";
+            },
+
+            async cancelOrderItem(itemId) {
+                if (!confirm("Cancel this item?")) return;
+
+                try {
+                    // API call to cancel item would go here
+                    console.log("Canceling item:", itemId);
+                    this.showSuccessToast("Item cancellation requested");
+                    // Refresh status
+                    await this.loadItemsStatus();
+                } catch (error) {
+                    console.error("Error canceling item:", error);
+                }
+            },
+
+            hasActiveOrders() {
+                return this.itemsStatus && this.itemsStatus.orders && this.itemsStatus.orders.length > 0;
+            },
+        };
+    }
+</script>
+
+<!-- JSON Data -->
+<script id="drinks-vendors-data" type="application/json">
+    {{ drinks_vendors }}
+</script>
+<script id="food-vendors-data" type="application/json">
+    {{ food_vendors }}
+</script>
+{% endblock %}
