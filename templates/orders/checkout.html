@@ -35,6 +35,13 @@
                 <div class="badge badge-primary">
                     🛒 {{ cart_count }} items - ${{ cart_total }}
                 </div>
+                <button
+                    class="btn btn-sm btn-ghost btn-outline"
+                    onclick="resetSelection()"
+                    title="Reset selection and start over"
+                >
+                    🔄 Reset
+                </button>
             </div>
         </div>
 
@@ -387,5 +394,30 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.appendChild(csrfToken);
     }
 });
+
+// Reset selection and clear all data
+function resetSelection() {
+    if (confirm('Are you sure you want to reset? This will clear your cart and return to table selection.')) {
+        // Clear localStorage
+        localStorage.removeItem('cart_table_{{ table.number }}');
+        localStorage.removeItem('selectedTable');
+        localStorage.removeItem('customerPhone');
+
+        // Clear session by making a request to clear session
+        fetch('/api/clear-session/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        }).then(() => {
+            // Redirect to table selection
+            window.location.href = '/';
+        }).catch(() => {
+            // If API call fails, still redirect
+            window.location.href = '/';
+        });
+    }
+}
 </script>
 {% endblock %}
