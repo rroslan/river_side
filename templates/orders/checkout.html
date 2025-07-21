@@ -1,0 +1,391 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Checkout - Table {{ table.number }} - River Side Food Court{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-base-100 py-8">
+    <div class="container mx-auto px-4">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="flex items-center justify-center mb-4">
+                <div class="badge badge-primary badge-lg">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4l2 2 4-4"></path>
+                    </svg>
+                    Table {{ table.number }}
+                </div>
+            </div>
+            <h1 class="text-3xl font-bold text-primary mb-2">Review Your Order</h1>
+            <p class="text-lg text-base-content/70">Please review your items before placing the order</p>
+        </div>
+
+        <!-- Customer Info -->
+        <div class="text-center mb-6">
+            <div class="flex items-center justify-center gap-2 flex-wrap">
+                <div class="badge badge-outline">
+                    📞 {{ customer_phone }}
+                </div>
+                {% if customer_name %}
+                <div class="badge badge-outline">
+                    👤 {{ customer_name }}
+                </div>
+                {% endif %}
+                <div class="badge badge-primary">
+                    🛒 {{ cart_count }} items - ${{ cart_total }}
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-4xl mx-auto">
+            <!-- Order Summary -->
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Cart Items (Left Side) -->
+                <div class="lg:col-span-2">
+                    <div class="card bg-base-200 shadow-xl">
+                        <div class="card-body">
+                            <h2 class="card-title text-2xl mb-6">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6h9.5M7 13h10"></path>
+                                </svg>
+                                Your Order
+                            </h2>
+
+                            {% for vendor_name, vendor_items in cart_items_by_vendor.items %}
+                            <div class="mb-8">
+                                <!-- Vendor Header -->
+                                <div class="flex items-center mb-4">
+                                    <div class="badge badge-secondary badge-lg">
+                                        {% if vendor_items.0.menu_item.category.vendor.vendor_type == 'drinks' %}
+                                            🥤
+                                        {% else %}
+                                            🍽️
+                                        {% endif %}
+                                        {{ vendor_name }}
+                                    </div>
+                                </div>
+
+                                <!-- Vendor Items -->
+                                <div class="space-y-3">
+                                    {% for item in vendor_items %}
+                                    <div class="flex items-center justify-between p-4 bg-base-100 rounded-lg border border-base-300">
+                                        <div class="flex-1">
+                                            <h4 class="font-semibold text-base-content">{{ item.menu_item.name }}</h4>
+                                            {% if item.menu_item.description %}
+                                            <p class="text-sm text-base-content/60 mt-1">{{ item.menu_item.description }}</p>
+                                            {% endif %}
+                                            {% if item.special_instructions %}
+                                            <p class="text-sm text-warning mt-2">
+                                                <span class="font-medium">Note:</span> {{ item.special_instructions }}
+                                            </p>
+                                            {% endif %}
+
+                                            <!-- Item tags -->
+                                            <div class="flex flex-wrap gap-1 mt-2">
+                                                {% if item.menu_item.is_vegetarian %}
+                                                <div class="badge badge-success badge-xs">🌱 Vegetarian</div>
+                                                {% endif %}
+                                                {% if item.menu_item.is_vegan %}
+                                                <div class="badge badge-success badge-xs">🌿 Vegan</div>
+                                                {% endif %}
+                                                {% if item.menu_item.is_spicy %}
+                                                <div class="badge badge-warning badge-xs">🌶️ Spicy</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="text-right ml-4">
+                                            <div class="flex items-center gap-3">
+                                                <!-- Quantity Controls -->
+                                                <div class="flex items-center gap-2">
+                                                    <button
+                                                        class="btn btn-circle btn-xs btn-outline"
+                                                        onclick="updateQuantity({{ item.id }}, {{ item.quantity }} - 1)"
+                                                        {% if item.quantity <= 1 %}disabled{% endif %}
+                                                    >
+                                                        -
+                                                    </button>
+                                                    <span class="px-3 py-1 bg-base-200 rounded text-sm font-medium">
+                                                        {{ item.quantity }}
+                                                    </span>
+                                                    <button
+                                                        class="btn btn-circle btn-xs btn-outline"
+                                                        onclick="updateQuantity({{ item.id }}, {{ item.quantity }} + 1)"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+
+                                                <!-- Price -->
+                                                <div class="text-right">
+                                                    <div class="text-sm text-base-content/60">${{ item.unit_price }} each</div>
+                                                    <div class="font-bold text-primary">${{ item.subtotal }}</div>
+                                                </div>
+
+                                                <!-- Remove Button -->
+                                                <button
+                                                    class="btn btn-circle btn-xs btn-error btn-outline"
+                                                    onclick="removeItem({{ item.id }})"
+                                                    title="Remove item"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+
+                            <!-- Empty cart state -->
+                            {% if not cart_items %}
+                            <div class="text-center py-12">
+                                <div class="text-6xl mb-4">🛒</div>
+                                <h3 class="text-2xl font-bold text-base-content/70 mb-2">Your cart is empty</h3>
+                                <p class="text-base-content/50 mb-6">Add some delicious items to get started!</p>
+                                <a href="{% url 'orders:table_menu' table.number %}" class="btn btn-primary">
+                                    Browse Menu
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Summary & Checkout (Right Side) -->
+                <div class="lg:col-span-1">
+                    <div class="card bg-base-200 shadow-xl sticky top-8">
+                        <div class="card-body">
+                            <h3 class="card-title text-xl mb-4">Order Summary</h3>
+
+                            <!-- Summary Details -->
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span>Items ({{ cart_count }})</span>
+                                    <span>${{ cart_total }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Service Fee</span>
+                                    <span></span>$0.00</span>
+                                </div>
+                                <div class="divider my-2"></div>
+                                <div class="flex justify-between text-lg font-bold">
+                                    <span>Total</span>
+                                    <span class="text-primary">${{ cart_total }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Special Instructions -->
+                            <div class="form-control mt-6">
+                                <label class="label">
+                                    <span class="label-text">Special Instructions (Optional)</span>
+                                </label>
+                                <textarea
+                                    class="textarea textarea-bordered h-20"
+                                    placeholder="Any special requests for your order..."
+                                    id="order-notes"
+                                    maxlength="500"
+                                ></textarea>
+                                <label class="label">
+                                    <span class="label-text-alt text-base-content/60">
+                                        <span id="notes-count">0</span>/500 characters
+                                    </span>
+                                </label>
+                            </div>
+
+                            <!-- Place Order Button -->
+                            <button
+                                class="btn btn-primary btn-lg btn-block mt-6"
+                                onclick="placeOrder()"
+                                id="place-order-btn"
+                                {% if not cart_items %}disabled{% endif %}
+                            >
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Place Order
+                            </button>
+
+                            <!-- Continue Shopping -->
+                            <a href="{% url 'orders:table_menu' table.number %}"
+                               class="btn btn-ghost btn-block mt-3">
+                                Continue Shopping
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="success-modal" class="modal">
+            <div class="modal-box">
+                <h3 class="font-bold text-lg text-success">Order Placed Successfully! 🎉</h3>
+                <p class="py-4">Your order has been submitted and sent to the kitchen. You'll receive updates on your order status.</p>
+                <div class="modal-action">
+                    <a href="{% url 'orders:track_orders' table.number %}" class="btn btn-primary">
+                        Track Your Order
+                    </a>
+                    <a href="{% url 'orders:table_selection' %}" class="btn btn-ghost">
+                        Start New Order
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Modal -->
+        <div id="loading-modal" class="modal">
+            <div class="modal-box text-center">
+                <span class="loading loading-spinner loading-lg text-primary"></span>
+                <h3 class="font-bold text-lg mt-4">Processing Your Order...</h3>
+                <p class="py-4">Please wait while we submit your order to the kitchen.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Character counter for notes
+document.getElementById('order-notes').addEventListener('input', function() {
+    const count = this.value.length;
+    document.getElementById('notes-count').textContent = count;
+});
+
+// Update item quantity
+async function updateQuantity(cartItemId, newQuantity) {
+    if (newQuantity < 1) {
+        removeItem(cartItemId);
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/update-cart-item/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                cart_item_id: cartItemId,
+                quantity: newQuantity
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            location.reload(); // Refresh to show updated quantities and totals
+        } else {
+            showError(data.error || 'Failed to update quantity');
+        }
+    } catch (error) {
+        console.error('Error updating quantity:', error);
+        showError('Failed to update quantity');
+    }
+}
+
+// Remove item from cart
+async function removeItem(cartItemId) {
+    if (!confirm('Remove this item from your cart?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/remove-from-cart/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                cart_item_id: cartItemId
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            location.reload(); // Refresh to show updated cart
+        } else {
+            showError(data.error || 'Failed to remove item');
+        }
+    } catch (error) {
+        console.error('Error removing item:', error);
+        showError('Failed to remove item');
+    }
+}
+
+// Place order
+async function placeOrder() {
+    const notes = document.getElementById('order-notes').value;
+    const placeOrderBtn = document.getElementById('place-order-btn');
+    const loadingModal = document.getElementById('loading-modal');
+    const successModal = document.getElementById('success-modal');
+
+    // Show loading modal
+    loadingModal.classList.add('modal-open');
+    placeOrderBtn.disabled = true;
+
+    try {
+        const response = await fetch(`/api/place-order/{{ table.number }}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                notes: notes
+            })
+        });
+
+        const data = await response.json();
+
+        // Hide loading modal
+        loadingModal.classList.remove('modal-open');
+
+        if (data.success) {
+            // Clear local cart storage
+            localStorage.removeItem('cart_table_{{ table.number }}');
+
+            // Show success modal
+            successModal.classList.add('modal-open');
+        } else {
+            showError(data.error || 'Failed to place order');
+            placeOrderBtn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error placing order:', error);
+        loadingModal.classList.remove('modal-open');
+        showError('Failed to place order. Please try again.');
+        placeOrderBtn.disabled = false;
+    }
+}
+
+// Show error message
+function showError(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-top toast-end';
+    toast.innerHTML = `
+        <div class="alert alert-error">
+            <svg class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>${message}</span>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
+}
+
+// Initialize CSRF token
+document.addEventListener('DOMContentLoaded', function() {
+    if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrfmiddlewaretoken';
+        csrfToken.value = '{{ csrf_token }}';
+        document.body.appendChild(csrfToken);
+    }
+});
+</script>
+{% endblock %}

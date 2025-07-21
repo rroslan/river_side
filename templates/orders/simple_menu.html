@@ -32,6 +32,9 @@
                     👤 {{ customer_name }}
                 </div>
                 {% endif %}
+                <div class="badge badge-primary" id="cart-status-badge" style="display: none;">
+                    🛒 <span id="cart-count">0</span> items - $<span id="cart-total">0.00</span>
+                </div>
                 <button
                     class="btn btn-sm btn-ghost btn-outline"
                     onclick="resetSelection()"
@@ -319,12 +322,22 @@ async function addToCart(itemId, itemName, itemPrice, tableNumber) {
 function updateCartDisplay() {
     const cartFloat = document.getElementById('cart-float');
     const cartSummary = document.getElementById('cart-summary');
+    const cartStatusBadge = document.getElementById('cart-status-badge');
+    const cartCount = document.getElementById('cart-count');
+    const cartTotal = document.getElementById('cart-total');
 
     if (cart.count > 0) {
+        // Update floating cart
         cartFloat.classList.remove('hidden');
         cartSummary.textContent = `${cart.count} items - $${cart.total.toFixed(2)}`;
+
+        // Update badge in header
+        cartStatusBadge.style.display = 'inline-flex';
+        cartCount.textContent = cart.count;
+        cartTotal.textContent = cart.total.toFixed(2);
     } else {
         cartFloat.classList.add('hidden');
+        cartStatusBadge.style.display = 'none';
     }
 }
 
@@ -378,6 +391,10 @@ function resetSelection() {
         localStorage.removeItem('cart_table_{{ table.number }}');
         localStorage.removeItem('selectedTable');
         localStorage.removeItem('customerPhone');
+
+        // Reset cart display
+        cart = { items: [], total: 0, count: 0 };
+        updateCartDisplay();
 
         // Clear session by making a request to clear session
         fetch('/api/clear-session/', {

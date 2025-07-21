@@ -237,19 +237,36 @@ def remove_from_cart(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 def checkout(request, table_number):
-    """Checkout page"""
+    """Checkout page - view cart items and place order"""
     table = get_object_or_404(Table, number=table_number, is_active=True)
+
+    # Check if customer has provided phone
+    if not request.session.get('customer_phone'):
+        return redirect('orders:phone_input', table_number=table_number)
+
     cart = get_or_create_cart(request, table)
 
     if not cart.items.exists():
         messages.error(request, 'Your cart is empty')
-        return redirect('table_menu', table_number=table_number)
+        return redirect('orders:table_menu', table_number=table_number)
+
+    # Group cart items by vendor for better display
+    cart_items_by_vendor = {}
+    for item in cart.items.all():
+        vendor_name = item.menu_item.category.vendor.name
+        if vendor_name not in cart_items_by_vendor:
+            cart_items_by_vendor[vendor_name] = []
+        cart_items_by_vendor[vendor_name].append(item)
 
     context = {
         'table': table,
         'cart': cart,
         'cart_items': cart.items.all(),
-        'cart_total': cart.get_total()
+        'cart_items_by_vendor': cart_items_by_vendor,
+        'cart_total': cart.get_total(),
+        'cart_count': cart.get_item_count(),
+        'customer_phone': request.session.get('customer_phone'),
+        'customer_name': request.session.get('customer_name'),
     }
 
     return render(request, 'orders/checkout.html', context)
