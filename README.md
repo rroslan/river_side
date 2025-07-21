@@ -16,6 +16,8 @@ A modern Django-based food court ordering system where customers can select tabl
 - **📞 Phone Input Step** - Enter contact details before ordering
 - **🛒 Menu Browsing** - View drinks and food vendors with categories
 - **🛍️ Add to Cart** - Simple cart functionality with floating cart display
+- **🛒 Cart Status Badge** - Inline cart status with item count and total price
+- **📋 Checkout & Review** - Comprehensive order review and placement
 - **🔄 Reset Function** - Clear selection and start over
 - **📱 Responsive Design** - Works on desktop, tablet, and mobile
 - **⚡ Real-time Updates** - Live order status via WebSockets (in development)
@@ -109,7 +111,7 @@ Once the server is running, access different parts of the system:
 | 🏠 **Table Selection** | `http://localhost:8000/` | Landing page for table selection |
 | 👤 **Phone Input** | `http://localhost:8000/table/{number}/` | Customer contact details |
 | 🍽️ **Menu** | `http://localhost:8000/table/{number}/menu/` | Browse and order from menu |
-| 🛒 **Checkout** | `http://localhost:8000/table/{number}/checkout/` | Review and place order |
+| 🛒 **Checkout** | `http://localhost:8000/table/{number}/checkout/` | Review cart and place order |
 | 📊 **Track Orders** | `http://localhost:8000/table/{number}/track/` | Order status tracking |
 | ⚙️ **Admin Panel** | `http://localhost:8000/admin/` | Django admin interface |
 | 📊 **API Status** | `http://localhost:8000/api/status/` | System health check |
@@ -128,9 +130,12 @@ Once the server is running, access different parts of the system:
 3. **📞 Enter Details** - Provide phone number and optional name
 4. **🍽️ Browse Menu** - View drinks and food vendors with categories
 5. **🛒 Add Items** - Add items to cart with floating cart indicator
-6. **🔄 Reset Option** - Clear selection and start over if needed
-7. **⚡ Real-time Tracking** - Live order status updates (in development)
-8. **🔔 Notifications** - Get notified when order status changes (planned)
+6. **📊 Cart Status** - See real-time cart count and total in header badge
+7. **📋 Checkout** - Review order, adjust quantities, add special instructions
+8. **💳 Place Order** - Submit order with loading and success confirmation
+9. **🔄 Reset Option** - Clear selection and start over if needed
+10. **⚡ Real-time Tracking** - Live order status updates (in development)
+11. **🔔 Notifications** - Get notified when order status changes (planned)
 
 ## 🛠️ Technical Architecture
 
@@ -268,6 +273,9 @@ python manage.py test
    - Select an available table
    - Enter phone number
    - Browse menu and add items to cart
+   - See cart status in header badge
+   - Review order in checkout
+   - Place order and get confirmation
    - Use reset button to start over
 
 ## 🎨 Tailwind CSS Setup
@@ -329,12 +337,19 @@ river_side/
 - [x] Menu display with vendor categories
 - [x] Add to cart functionality
 - [x] Floating cart indicator
+- [x] Cart status badge (inline with customer info)
+- [x] Comprehensive checkout page
+- [x] Cart quantity controls (increase/decrease)
+- [x] Remove items from cart
+- [x] Order placement with confirmation
+- [x] Special instructions for orders
 - [x] Session management for customer data
 - [x] Reset functionality to clear session
 - [x] Responsive design with TailwindCSS
 - [x] Admin interface for data management
 
 ### 🚧 **Currently Implementing (Real-time Features)**
+- [ ] **Order Tracking System** - Live order status updates for customers
 - [ ] **Django Channels Setup** - WebSocket support for real-time communication
 - [ ] **Redis Integration** - Channel layer backend for message routing
 - [ ] **Daphne ASGI Server** - Production-ready WebSocket server
@@ -345,7 +360,6 @@ river_side/
 - [ ] **Kitchen Display** - Live dashboard showing all active orders
 
 ### 🔄 **Next Phase Development**
-- [ ] Checkout and order placement completion
 - [ ] Order tracking system with live updates
 - [ ] Vendor dashboard with real-time order management
 - [ ] Kitchen display system with live order feed
