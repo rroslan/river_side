@@ -414,6 +414,7 @@ river_side/
 - [x] **Simplified Tracking** - Streamlined order tracking without redundant sections
 - [x] **WebSocket Support** - Fixed "Not Found" errors with proper ASGI server setup
 - [x] **Development Tools** - Added WebSocket-enabled server script and testing utilities
+- [x] **UI Cleanup** - Removed connection status and estimated time displays for cleaner interface
 
 ### 🔄 **Next Phase Development**
 - [ ] Order tracking system with live updates
@@ -434,6 +435,7 @@ river_side/
 - [x] **WebSocket Connectivity** - Fixed "Not Found" errors by implementing proper ASGI support
 - [x] **Server Infrastructure** - Added Daphne ASGI server with Redis channel layers
 - [x] **Error Handling** - Added broken pipe middleware and comprehensive logging
+- [x] **Interface Streamlining** - Removed technical WebSocket status and time estimates from customer view
 
 ### 📋 **Future Enhancements**
 - [ ] QR code generation for tables
