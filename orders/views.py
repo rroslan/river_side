@@ -340,9 +340,37 @@ def track_orders(request, table_number):
         status__in=['pending', 'confirmed', 'preparing', 'ready']
     ).order_by('-created_at')
 
+    # Serialize orders for JavaScript
+    orders_data = []
+    for order in orders:
+        order_items = []
+        for item in order.items.all():
+            order_items.append({
+                'id': item.id,
+                'name': item.menu_item.name,
+                'quantity': item.quantity,
+                'unit_price': str(item.unit_price),
+                'subtotal': str(item.subtotal),
+                'special_instructions': item.special_instructions,
+                'status': item.status,
+                'vendor': item.menu_item.category.vendor.name
+            })
+
+        orders_data.append({
+            'id': str(order.id),
+            'status': order.status,
+            'total_amount': str(order.total_amount),
+            'notes': order.notes,
+            'created_at': order.created_at.isoformat(),
+            'confirmed_at': order.confirmed_at.isoformat() if order.confirmed_at else None,
+            'ready_at': order.ready_at.isoformat() if order.ready_at else None,
+            'estimated_ready_time': None,  # Add estimated time logic later
+            'items': order_items
+        })
+
     context = {
         'table': table,
-        'orders': orders
+        'orders': orders_data
     }
 
     return render(request, 'orders/track_orders.html', context)

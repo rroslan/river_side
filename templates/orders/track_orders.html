@@ -269,6 +269,7 @@
     </div>
 </div>
 
+{{ orders|json_script:"orders-data" }}
 <script>
 function orderTracker() {
     return {
@@ -282,8 +283,14 @@ function orderTracker() {
             setInterval(() => this.updateTime(), 1000);
             this.connectWebSocket();
 
-            // Load initial orders
-            this.orders = {{ orders|safe }} || [];
+            // Load initial orders from JSON script tag
+            const ordersData = document.getElementById('orders-data');
+            try {
+                this.orders = ordersData ? JSON.parse(ordersData.textContent) : [];
+            } catch (e) {
+                console.error('Error parsing orders data:', e);
+                this.orders = [];
+            }
         },
 
         connectWebSocket() {
