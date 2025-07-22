@@ -68,7 +68,10 @@ python manage.py create_sample_data
 # 4. Create superuser
 python create_superuser.py
 
-# 5. Start server
+# 5. Start server (with WebSocket support)
+python run_server.py
+
+# Alternative: Standard Django server (no WebSockets)
 python manage.py runserver
 ```
 
@@ -198,12 +201,11 @@ GET  /debug/cart/{table_number}/         # Inspect cart contents
 GET  /debug/clear-cart/{table_number}/   # Clear cart for testing
 ```
 
-### **WebSocket Endpoints (In Development)**
+### **WebSocket Endpoints** ✅
 ```
-/ws/orders/table/{table_number}/     # Customer order updates
-/ws/orders/vendor/{vendor_id}/       # Vendor order notifications  
-/ws/orders/kitchen/                  # Kitchen display updates
-/ws/orders/status/{order_id}/        # Order status tracking
+/ws/orders/table/{table_number}/     # Customer order updates (WORKING)
+/ws/orders/vendor/{vendor_id}/       # Vendor order notifications (WORKING)
+/ws/orders/kitchen/                  # Kitchen display updates (WORKING)
 ```
 
 ## 🔧 Configuration
@@ -253,12 +255,35 @@ if not REDIS_AVAILABLE:
     }
 ```
 
-### **Daphne Server Setup**
+### **Development Server Options**
+
+#### **🚀 WebSocket-Enabled Server (Recommended)**
 ```bash
-# For development with WebSockets
+# Start with WebSocket support (includes Redis check, migrations)
+python run_server.py
+
+# Start on all interfaces
+python run_server.py -H 0.0.0.0
+
+# Custom port
+python run_server.py -p 8080
+
+# Check setup without starting
+python run_server.py --check-only
+```
+
+#### **📡 Manual ASGI Server**
+```bash
+# Using Daphne directly
 daphne -b 0.0.0.0 -p 8000 core.asgi:application
 
-# Or use Django's built-in ASGI support
+# Using Django's ASGI (Django 3.0+)
+python manage.py runserver --noreload
+```
+
+#### **⚡ Standard Django Server (No WebSockets)**
+```bash
+# Traditional HTTP-only server
 python manage.py runserver
 ```
 
@@ -267,6 +292,15 @@ python manage.py runserver
 ### **Run Tests**
 ```bash
 python manage.py test
+```
+
+### **WebSocket Testing**
+```bash
+# Test WebSocket connectivity
+python simple_websocket_test.py
+
+# Check server setup
+python run_server.py --check-only
 ```
 
 ### **Manual Testing**
@@ -360,12 +394,12 @@ river_side/
 - [x] Admin interface for data management
 
 ### 🚧 **Currently Implementing (Real-time Features)**
-- [ ] **Order Tracking System** - Live order status updates for customers  
-- [ ] **Django Channels Setup** - WebSocket support for real-time communication
-- [ ] **Redis Integration** - Channel layer backend for message routing
-- [ ] **Daphne ASGI Server** - Production-ready WebSocket server
-- [ ] **WebSocket Consumers** - Handle real-time order updates
-- [ ] **Channel Groups** - Organize connections by table/vendor/kitchen
+- [x] **Django Channels Setup** - WebSocket support for real-time communication ✅
+- [x] **Redis Integration** - Channel layer backend for message routing ✅
+- [x] **Daphne ASGI Server** - Production-ready WebSocket server ✅
+- [x] **WebSocket Consumers** - Handle real-time order updates ✅
+- [x] **Channel Groups** - Organize connections by table/vendor/kitchen ✅
+- [ ] **Order Tracking System** - Live order status updates for customers (90% complete)
 - [ ] **Real-time Order Status** - Live updates when orders change status
 - [ ] **Vendor Notifications** - Instant alerts for new orders
 - [ ] **Kitchen Display** - Live dashboard showing all active orders
@@ -378,6 +412,8 @@ river_side/
 - [x] **Form Optimization** - 50px height textbox with character limits and inline styles
 - [x] **Order Status Sync** - Automatic synchronization between order and item statuses
 - [x] **Simplified Tracking** - Streamlined order tracking without redundant sections
+- [x] **WebSocket Support** - Fixed "Not Found" errors with proper ASGI server setup
+- [x] **Development Tools** - Added WebSocket-enabled server script and testing utilities
 
 ### 🔄 **Next Phase Development**
 - [ ] Order tracking system with live updates
@@ -395,6 +431,9 @@ river_side/
 - [x] **Status Synchronization** - Fixed order/item status mismatches (9 orders corrected)
 - [x] **JavaScript Errors** - Fixed Alpine.js orderTracker function issues
 - [x] **Simplified UI** - Removed redundant pending order sections
+- [x] **WebSocket Connectivity** - Fixed "Not Found" errors by implementing proper ASGI support
+- [x] **Server Infrastructure** - Added Daphne ASGI server with Redis channel layers
+- [x] **Error Handling** - Added broken pipe middleware and comprehensive logging
 
 ### 📋 **Future Enhancements**
 - [ ] QR code generation for tables
