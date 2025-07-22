@@ -507,8 +507,21 @@ def get_tables(request):
 
 @require_http_methods(["POST"])
 def clear_session(request):
-    """Clear customer session data"""
+    """Clear customer session data and cart"""
     try:
+        # Get table number from session before clearing
+        table_number = request.session.get('selected_table')
+
+        # Clear server-side cart if table exists
+        if table_number:
+            try:
+                table = Table.objects.get(number=table_number, is_active=True)
+                cart = get_or_create_cart(request, table)
+                # Delete all cart items
+                cart.items.all().delete()
+            except Table.DoesNotExist:
+                pass  # Table doesn't exist, nothing to clear
+
         # Clear session data
         session_keys = ['selected_table', 'customer_phone', 'customer_name']
         for key in session_keys:
@@ -517,7 +530,7 @@ def clear_session(request):
 
         request.session.modified = True
 
-        return JsonResponse({'success': True, 'message': 'Session cleared'})
+        return JsonResponse({'success': True, 'message': 'Session and cart cleared'})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
