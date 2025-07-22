@@ -109,8 +109,8 @@
             <div class="status-dot bg-success pulse-animation"></div>
         </div>
 
-        <!-- Confirmed/Active Orders List -->
-        <div x-show="orders.length > 0 && orders.some(order => order.status !== 'pending')">
+        <!-- Orders List -->
+        <div x-show="orders.length > 0">
             <div class="grid gap-6">
                 <template x-for="order in orders" :key="order.id">
                     <div class="card bg-base-200 shadow-lg order-item-card"
@@ -144,7 +144,7 @@
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                <span></span>
+                                <span>
                                     Estimated ready time:
                                     <strong x-text="formatTime(order.estimated_ready_time)"></strong>
                                 </span>
@@ -169,10 +169,7 @@
                                                 <span class="text-sm text-base-content/60" x-text="item.vendor"></span>
                                             </div>
 
-                                            <!-- Item Status - Now synced with order status -->
-                                            <div x-show="item.status !== order.status" class="text-xs text-warning mt-1">
-                                                ⚠️ Status syncing...
-                                            </div>
+
 
                                             <!-- Special Instructions -->
                                             <div x-show="item.special_instructions" class="text-sm text-base-content/60 mt-1">
@@ -209,61 +206,14 @@
             </div>
         </div>
 
-        <!-- Pending Orders Notice -->
-        <div x-show="orders.length > 0 && orders.some(order => order.status === 'pending')" class="mb-6">
-            <div class="alert alert-warning">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <div></div>
-                    <p class="font-medium">Some orders are waiting for vendor confirmation</p>
-                    <p class="text-sm">Vendors are reviewing your recent orders. Confirmed orders will appear below with tracking details.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- All Pending Orders State -->
-        <div x-show="orders.length > 0 && orders.every(order => order.status === 'pending')" class="text-center py-16">
-            <div class="text-6xl mb-4">⏳</div>
-            <h3 class="text-2xl font-bold text-base-content/70 mb-2">Waiting for Vendor Confirmation</h3>
-            <p class="text-base-content/50 mb-4">Your orders have been submitted and are being reviewed by the vendors.</p>
-
-            <div class="alert alert-info max-w-md mx-auto mb-6">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <div class="text-left">
-                    <p class="font-medium">What happens next:</p>
-                    <p class="text-sm">• Vendors will confirm your order</p>
-                    <p class="text-sm">• You'll see live tracking updates here</p>
-                    <p class="text-sm">• Get notified when items are ready</p>
-                </div>
-            </div>
-
-            <div class="flex gap-2 justify-center">
-                <a href="{% url 'orders:table_menu' table.number %}" class="btn btn-primary">
-                    Order More Items
-                </a>
-                <button @click="location.reload()" class="btn btn-outline">
-                    Refresh Status
-                </button>
-            </div>
-        </div>
-
         <!-- No Orders State -->
-        <div x-show="orders.length === 0 && connected" class="text-center py-16">
+        <div x-show="orders.length === 0" class="text-center py-16">
             <div class="text-6xl mb-4">🍽️</div>
-            <h3 class="text-2xl font-bold text-base-content/70 mb-2">No Orders Yet</h3>
-            <p class="text-base-content/50 mb-6">You haven't placed any orders yet. Browse our delicious menu to get started!</p>
+            <h3 class="text-2xl font-bold text-base-content/70 mb-2">No Active Orders</h3>
+            <p class="text-base-content/50 mb-6">Ready to order? Browse our delicious menu!</p>
             <a href="{% url 'orders:table_menu' table.number %}" class="btn btn-primary">
-                Browse Menu & Order
+                Browse Menu
             </a>
-        </div>
-
-        <!-- Loading State -->
-        <div x-show="!connected && orders.length === 0" class="text-center py-16">
-            <div class="loading loading-spinner loading-lg text-primary mb-4"></div>
-            <h3 class="text-xl font-bold text-base-content/70">Loading Orders...</h3>
         </div>
     </div>
 </div>
