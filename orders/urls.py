@@ -23,4 +23,6 @@ urlpatterns = [
     path('api/tables/', views.get_tables, name='get_tables'),
     path('api/status/', views.status_check, name='status_check'),
     path('api/clear-session/', views.clear_session, name='clear_session'),
+    path('debug/cart/<int:table_number>/', views.debug_cart, name='debug_cart'),
+    path('debug/clear-cart/<int:table_number>/', views.clear_cart, name='clear_cart'),
 ]

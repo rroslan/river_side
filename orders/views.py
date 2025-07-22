@@ -520,3 +520,54 @@ def clear_session(request):
         return JsonResponse({'success': True, 'message': 'Session cleared'})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+def debug_cart(request, table_number):
+    """Debug endpoint to check cart contents"""
+    try:
+        table = get_object_or_404(Table, number=table_number, is_active=True)
+        cart = get_or_create_cart(request, table)
+
+        cart_items = []
+        for item in cart.items.all():
+            cart_items.append({
+                'id': item.id,
+                'menu_item': item.menu_item.name,
+                'quantity': item.quantity,
+                'unit_price': str(item.unit_price),
+                'subtotal': str(item.subtotal),
+                'special_instructions': item.special_instructions
+            })
+
+        return JsonResponse({
+            'cart_id': cart.id,
+            'session_key': cart.session_key,
+            'table_number': table.number,
+            'total_items': cart.get_item_count(),
+            'total_amount': str(cart.get_total()),
+            'cart_items': cart_items,
+            'session_data': {
+                'selected_table': request.session.get('selected_table'),
+                'customer_phone': request.session.get('customer_phone'),
+                'customer_name': request.session.get('customer_name')
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+def clear_cart(request, table_number):
+    """Clear cart for debugging purposes"""
+    try:
+        table = get_object_or_404(Table, number=table_number, is_active=True)
+        cart = get_or_create_cart(request, table)
+
+        # Delete all cart items
+        cart.items.all().delete()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Cart cleared for table {table_number}',
+            'cart_count': cart.get_item_count(),
+            'cart_total': str(cart.get_total())
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
