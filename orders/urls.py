@@ -17,6 +17,8 @@ urlpatterns = [
     path('track/<int:table_number>/', views.track_orders, name='track_orders_short'),
 
     # Cashier URLs
+    path('cashier/login/', cashier_views.cashier_login, name='cashier_login'),
+    path('cashier/logout/', cashier_views.cashier_logout, name='cashier_logout'),
     path('cashier/', cashier_views.cashier_dashboard, name='cashier_dashboard'),
     path('cashier/mark-paid/<uuid:order_id>/', cashier_views.mark_order_paid, name='mark_order_paid'),
     path('cashier/reset-table/<int:table_number>/', cashier_views.reset_table, name='reset_table'),

@@ -2,6 +2,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth import authenticate, login, logout
+from django.urls import reverse
+from functools import wraps
 from django.contrib import messages
 from django.db.models import Q, Count, Sum
 from django.utils import timezone
@@ -15,8 +18,54 @@ def is_cashier_or_staff(user):
     """Check if user is staff or has cashier permissions"""
     return user.is_staff or user.groups.filter(name='Cashiers').exists()
 
-@login_required
-@user_passes_test(is_cashier_or_staff)
+def cashier_login_required(view_func):
+    """Custom login required decorator that redirects to cashier login"""
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            from django.shortcuts import redirect
+            login_url = reverse('orders:cashier_login')
+            path = request.get_full_path()
+            return redirect(f'{login_url}?next={path}')
+
+        if not is_cashier_or_staff(request.user):
+            from django.shortcuts import redirect
+            from django.contrib import messages
+            messages.error(request, 'You do not have permission to access the cashier dashboard.')
+            return redirect('orders:cashier_login')
+
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
+def cashier_login(request):
+    """Cashier login page"""
+    if request.user.is_authenticated and is_cashier_or_staff(request.user):
+        return redirect('orders:cashier_dashboard')
+
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        if username and password:
+            user = authenticate(request, username=username, password=password)
+            if user is not None and is_cashier_or_staff(user):
+                login(request, user)
+                next_url = request.GET.get('next', '/cashier/')
+                return redirect(next_url)
+            else:
+                messages.error(request, 'Invalid credentials or insufficient permissions.')
+        else:
+            messages.error(request, 'Please enter both username and password.')
+
+    return render(request, 'orders/cashier_login.html')
+
+def cashier_logout(request):
+    """Cashier logout"""
+    logout(request)
+    messages.success(request, 'You have been logged out successfully.')
+    return redirect('orders:cashier_login')
+
+@cashier_login_required
 def cashier_dashboard(request):
     """Main cashier dashboard showing orders ready for payment"""
     # Get filters from request
@@ -89,8 +138,7 @@ def cashier_dashboard(request):
 
     return render(request, 'orders/cashier_dashboard.html', context)
 
-@login_required
-@user_passes_test(is_cashier_or_staff)
+@cashier_login_required
 @require_http_methods(["POST"])
 def mark_order_paid(request, order_id):
     """Mark an order as paid"""
@@ -146,8 +194,7 @@ def mark_order_paid(request, order_id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-@login_required
-@user_passes_test(is_cashier_or_staff)
+@cashier_login_required
 @require_http_methods(["POST"])
 def reset_table(request, table_number):
     """Reset/clear a table by cancelling unpaid orders"""
@@ -198,8 +245,7 @@ def reset_table(request, table_number):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-@login_required
-@user_passes_test(is_cashier_or_staff)
+@cashier_login_required
 def order_details(request, order_id):
     """Get detailed order information for cashier review"""
     try:
@@ -243,8 +289,7 @@ def order_details(request, order_id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-@login_required
-@user_passes_test(is_cashier_or_staff)
+@cashier_login_required
 def table_status_overview(request):
     """Get overview of all table statuses"""
     try:
@@ -302,8 +347,7 @@ def table_status_overview(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-@login_required
-@user_passes_test(is_cashier_or_staff)
+@cashier_login_required
 def daily_sales_report(request):
     """Generate daily sales report for cashier"""
     try:

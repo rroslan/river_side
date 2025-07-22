@@ -126,11 +126,12 @@ Once the server is running, access different parts of the system:
 
 | Interface | URL | Description |
 |-----------|-----|-------------|
-| 🏠 **Table Selection** | `http://localhost:8000/` | Landing page for table selection |
+| 🏠 **Table Selection** | `http://localhost:8000/` | Landing page for table selection (includes staff login links) |
 | 👤 **Phone Input** | `http://localhost:8000/table/{number}/` | Customer contact details |
 | 🍽️ **Menu** | `http://localhost:8000/table/{number}/menu/` | Browse and order from menu |
 | 🛒 **Checkout** | `http://localhost:8000/table/{number}/checkout/` | Review cart and place order |
 | 📊 **Track Orders** | `http://localhost:8000/table/{number}/track/` | Order status tracking |
+| 🔐 **Cashier Login** | `http://localhost:8000/cashier/login/` | Dedicated cashier authentication |
 | 💰 **Cashier Dashboard** | `http://localhost:8000/cashier/` | Payment processing and table management |
 | ⚙️ **Admin Panel** | `http://localhost:8000/admin/` | Django admin interface |
 | 📊 **API Status** | `http://localhost:8000/api/status/` | System health check |
@@ -147,6 +148,8 @@ Once the server is running, access different parts of the system:
 - **Password**: `cashier123`
 - **Email**: `cashier@riveriderestaurant.com`
 - **Access**: Staff permissions + Cashiers group
+- **Login URL**: `http://localhost:8000/cashier/login/`
+- **Note**: Direct access to `/cashier/` redirects to login automatically
 
 ## 🎯 User Workflow
 
