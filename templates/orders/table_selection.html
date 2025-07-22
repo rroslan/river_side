@@ -7,9 +7,32 @@ River Side Food Court{% endblock %} {% block content %}
             <h1 class="text-4xl font-bold text-primary mb-4">
                 Welcome to River Side Food Court
             </h1>
-            <p class="text-lg text-base-content/70">
+            <p class="text-lg text-base-content/70 mb-6">
                 Please select your table number to start ordering
             </p>
+
+            <!-- Search Option -->
+            <div class="flex justify-center">
+                <a
+                    href="{% url 'orders:table_search' %}"
+                    class="btn btn-outline btn-lg gap-2"
+                >
+                    <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        ></path>
+                    </svg>
+                    🔍 Find My Orders
+                </a>
+            </div>
         </div>
 
         <!-- Table Grid -->

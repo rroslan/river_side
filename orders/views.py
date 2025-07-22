@@ -375,6 +375,33 @@ def track_orders(request, table_number):
 
     return render(request, 'orders/track_orders.html', context)
 
+@require_http_methods(["GET"])
+def table_status(request, table_number):
+    """API endpoint to check if a table exists and has orders"""
+    try:
+        table = get_object_or_404(Table, number=table_number, is_active=True)
+
+        # Check if table has any active orders
+        has_orders = Order.objects.filter(
+            table=table,
+            status__in=['pending', 'confirmed', 'preparing', 'ready']
+        ).exists()
+
+        return JsonResponse({
+            'table_number': table.number,
+            'has_orders': has_orders,
+            'is_active': table.is_active
+        })
+
+    except Table.DoesNotExist:
+        return JsonResponse({
+            'error': 'Table not found'
+        }, status=404)
+
+def table_search(request):
+    """Table search page for finding orders"""
+    return render(request, 'orders/table_search.html')
+
 def order_history(request, table_number):
     """View order history for a table"""
     table = get_object_or_404(Table, number=table_number, is_active=True)
