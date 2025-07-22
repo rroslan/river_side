@@ -119,15 +119,126 @@ River Side Food Court{% endblock %} {% block extra_css %}
             </h2>
 
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {% for i in "123456789012345678901234"|make_list %} {% if
-                forloop.counter <= 24 %}
                 <a
-                    href="{% url 'orders:track_orders_short' forloop.counter %}"
+                    href="{% url 'orders:track_orders_short' 1 %}"
                     class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 1</a
                 >
-                    Table {{ forloop.counter }}
-                </a>
-                {% endif %} {% endfor %}
+                <a
+                    href="{% url 'orders:track_orders_short' 2 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 2</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 3 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 3</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 4 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 4</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 5 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 5</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 6 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 6</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 7 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 7</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 8 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 8</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 9 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 9</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 10 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 10</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 11 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 11</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 12 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 12</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 13 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 13</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 14 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 14</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 15 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 15</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 16 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 16</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 17 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 17</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 18 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 18</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 19 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 19</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 20 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 20</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 21 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 21</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 22 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 22</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 23 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 23</a
+                >
+                <a
+                    href="{% url 'orders:track_orders_short' 24 %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                    >Table 24</a
+                >
             </div>
 
             <div class="text-center mt-8">
