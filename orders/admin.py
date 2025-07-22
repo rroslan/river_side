@@ -2,16 +2,18 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from django.contrib import messages
 from .models import Order, OrderItem, OrderStatusHistory, Cart, CartItem
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('order_id_short', 'table', 'customer_name', 'status', 'total_amount', 'created_at', 'vendor_list')
+    list_display = ('order_id_short', 'table', 'customer_name', 'status_with_warning', 'total_amount', 'created_at', 'vendor_list')
     list_filter = ('status', 'created_at', 'table__number')
     search_fields = ('id', 'customer_name', 'customer_phone', 'table__number')
     readonly_fields = ('id', 'created_at', 'updated_at', 'total_amount')
-    list_editable = ('status',)
+    list_editable = ()
     ordering = ('-created_at',)
+    actions = ['sync_item_statuses']
 
     fieldsets = (
         ('Order Information', {
@@ -39,6 +41,42 @@ class OrderAdmin(admin.ModelAdmin):
             return ', '.join([vendor.name for vendor in vendors])
         return 'No vendors'
     vendor_list.short_description = 'Vendors'
+
+    def status_with_warning(self, obj):
+        item_statuses = set(obj.items.values_list('status', flat=True))
+        if len(item_statuses) > 1 or (item_statuses and obj.status not in item_statuses):
+            return format_html(
+                '<span style="color: red;">⚠️ {}</span><br><small style="color: #666;">Items: {}</small>',
+                obj.status,
+                ', '.join(item_statuses) if item_statuses else 'None'
+            )
+        return obj.status
+    status_with_warning.short_description = 'Status'
+    status_with_warning.admin_order_field = 'status'
+
+    def sync_item_statuses(self, request, queryset):
+        """Sync item statuses to match order status"""
+        updated_count = 0
+        for order in queryset:
+            item_count = order.items.update(status=order.status)
+            if item_count > 0:
+                updated_count += 1
+
+        if updated_count:
+            messages.success(request, f'Successfully synced {updated_count} orders with their items.')
+        else:
+            messages.info(request, 'No status synchronization needed.')
+    sync_item_statuses.short_description = "Sync item statuses with order status"
+
+    def save_model(self, request, obj, form, change):
+        """Override save to sync item statuses when order status changes"""
+        super().save_model(request, obj, form, change)
+
+        # Check if status was changed and sync items
+        if change and 'status' in form.changed_data:
+            updated_items = obj.items.update(status=obj.status)
+            if updated_items > 0:
+                messages.info(request, f'Automatically synced {updated_items} items to {obj.status} status.')
 
 class OrderItemInline(admin.TabularInline):
     model = OrderItem

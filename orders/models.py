@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
+from django.utils import timezone
 from decimal import Decimal
 from vendors.models import MenuItem, Table, Vendor
 import uuid
@@ -54,6 +55,25 @@ class Order(models.Model):
             models.Max('menu_item__preparation_time')
         )['menu_item__preparation_time__max']
         return max_prep_time or 15
+
+    def save(self, *args, **kwargs):
+        """Override save to sync order status with items"""
+        super().save(*args, **kwargs)
+
+        # Sync item statuses when order status changes
+        if self.status in ['confirmed', 'preparing', 'ready', 'delivered', 'cancelled']:
+            self.items.update(status=self.status)
+
+        # Update timestamps
+        if self.status == 'confirmed' and not self.confirmed_at:
+            self.confirmed_at = timezone.now()
+            super().save(update_fields=['confirmed_at'])
+        elif self.status == 'ready' and not self.ready_at:
+            self.ready_at = timezone.now()
+            super().save(update_fields=['ready_at'])
+        elif self.status == 'delivered' and not self.delivered_at:
+            self.delivered_at = timezone.now()
+            super().save(update_fields=['delivered_at'])
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')

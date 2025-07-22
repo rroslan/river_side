@@ -169,15 +169,14 @@
                                                 <span class="text-sm text-base-content/60" x-text="item.vendor"></span>
                                             </div>
 
-                                            <!-- Item Status -->
-                                            <div class="flex items-center mt-1" :class="'status-' + item.status">
-                                                <span class="status-dot"></span>
-                                                <span class="text-sm capitalize" x-text="item.status.replace('_', ' ')"></span>
+                                            <!-- Item Status - Now synced with order status -->
+                                            <div x-show="item.status !== order.status" class="text-xs text-warning mt-1">
+                                                ⚠️ Status syncing...
                                             </div>
 
                                             <!-- Special Instructions -->
                                             <div x-show="item.special_instructions" class="text-sm text-base-content/60 mt-1">
-                                                <em x-text="item.special_instructions"></em>
+                                                📝 <em x-text="item.special_instructions"></em>
                                             </div>
                                         </div>
 
