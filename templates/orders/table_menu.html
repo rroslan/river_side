@@ -1240,9 +1240,17 @@ Court - Menu{% endblock %} {% block extra_css %}
                     </label>
                     <textarea
                         x-model="orderForm.notes"
-                        class="textarea textarea-bordered"
-                        rows="3"
+                        class="textarea textarea-bordered text-xs"
+                        placeholder="Any special requests for your order..."
+                        maxlength="200"
+                        rows="2"
+                        style="height: 50px; min-height: 50px; max-height: 50px; resize: none;"
                     ></textarea>
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">
+                            <span x-text="orderForm.notes ? orderForm.notes.length : 0"></span>/200 characters
+                        </span>
+                    </label>
                 </div>
 
                 <div class="flex gap-2">

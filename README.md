@@ -16,9 +16,10 @@ A modern Django-based food court ordering system where customers can select tabl
 - **📞 Phone Input Step** - Enter contact details before ordering
 - **🛒 Menu Browsing** - View drinks and food vendors with categories
 - **🛍️ Add to Cart** - Simple cart functionality with floating cart display
-- **🛒 Cart Status Badge** - Inline cart status with item count and total price
-- **📋 Checkout & Review** - Comprehensive order review and placement
-- **🔄 Reset Function** - Clear selection and start over
+- **🛒 Cart Status Badge** - Real-time inline badge with item count and total price
+- **📋 Checkout & Review** - Comprehensive order review with quantity controls
+- **🔄 Complete Reset** - Clear all data (session, localStorage, database cart)
+- **🛠️ Debug Tools** - Cart debugging and troubleshooting endpoints
 - **📱 Responsive Design** - Works on desktop, tablet, and mobile
 - **⚡ Real-time Updates** - Live order status via WebSockets (in development)
 - **🔔 Live Notifications** - Instant alerts for order updates (planned)
@@ -29,9 +30,10 @@ A modern Django-based food court ordering system where customers can select tabl
 - **⚡ HTMX** - For dynamic page updates
 - **🔒 Secure** - CSRF protection and session management
 - **📊 RESTful APIs** - Clean API endpoints for cart operations
-- **🌐 WebSocket Integration** - Real-time communication with Django Channels
-- **🔴 Redis Backend** - Channel layer for WebSocket message routing
-- **🚀 Daphne Server** - ASGI server for handling WebSocket connections
+- **🌐 WebSocket Integration** - Real-time communication with Django Channels (planned)
+- **🔴 Redis Backend** - Channel layer for WebSocket message routing (planned)
+- **🚀 Daphne Server** - ASGI server for handling WebSocket connections (planned)
+- **🔍 Debug Endpoints** - Cart inspection and troubleshooting tools
 
 ## 🚀 Quick Start
 
@@ -133,7 +135,7 @@ Once the server is running, access different parts of the system:
 6. **📊 Cart Status** - See real-time cart count and total in header badge
 7. **📋 Checkout** - Review order, adjust quantities, add special instructions
 8. **💳 Place Order** - Submit order with loading and success confirmation
-9. **🔄 Reset Option** - Clear selection and start over if needed
+9. **🔄 Complete Reset** - Clear all data (session, cart, localStorage) and restart
 10. **⚡ Real-time Tracking** - Live order status updates (in development)
 11. **🔔 Notifications** - Get notified when order status changes (planned)
 
@@ -187,7 +189,13 @@ POST /api/remove-from-cart/         # Remove cart item
 POST /api/place-order/{table}/      # Place order for table
 GET  /api/cart-status/{table}/      # Get cart status
 GET  /api/items-status/{table}/     # Get order status
-POST /api/clear-session/            # Clear customer session
+POST /api/clear-session/            # Clear session and cart data
+```
+
+### **🔍 Debug Endpoints**
+```
+GET  /debug/cart/{table_number}/         # Inspect cart contents
+GET  /debug/clear-cart/{table_number}/   # Clear cart for testing
 ```
 
 ### **WebSocket Endpoints (In Development)**
@@ -273,10 +281,11 @@ python manage.py test
    - Select an available table
    - Enter phone number
    - Browse menu and add items to cart
-   - See cart status in header badge
-   - Review order in checkout
+   - See real-time cart status in header badge
+   - Review order in checkout with quantity controls
    - Place order and get confirmation
-   - Use reset button to start over
+   - Use reset button for complete fresh start
+   - Debug cart issues with /debug/cart/{table}/ if needed
 
 ## 🎨 Tailwind CSS Setup
 
@@ -342,14 +351,16 @@ river_side/
 - [x] Cart quantity controls (increase/decrease)
 - [x] Remove items from cart
 - [x] Order placement with confirmation
-- [x] Special instructions for orders
+- [x] Special instructions for orders (compact UI)
 - [x] Session management for customer data
-- [x] Reset functionality to clear session
+- [x] Complete reset functionality (session + cart + localStorage)
+- [x] Debug tools for cart troubleshooting
+- [x] Cart data synchronization fixes
 - [x] Responsive design with TailwindCSS
 - [x] Admin interface for data management
 
 ### 🚧 **Currently Implementing (Real-time Features)**
-- [ ] **Order Tracking System** - Live order status updates for customers
+- [ ] **Order Tracking System** - Live order status updates for customers  
 - [ ] **Django Channels Setup** - WebSocket support for real-time communication
 - [ ] **Redis Integration** - Channel layer backend for message routing
 - [ ] **Daphne ASGI Server** - Production-ready WebSocket server
@@ -359,12 +370,26 @@ river_side/
 - [ ] **Vendor Notifications** - Instant alerts for new orders
 - [ ] **Kitchen Display** - Live dashboard showing all active orders
 
+### 🔧 **Recently Improved**
+- [x] **Cart Data Consistency** - Fixed badge/checkout count discrepancies
+- [x] **Enhanced Reset** - Now clears server-side cart data
+- [x] **Debug Tools** - Cart inspection endpoints for troubleshooting
+- [x] **UI Polish** - Compact special instructions textbox with proper sizing
+- [x] **Form Optimization** - 50px height textbox with character limits and inline styles
+
 ### 🔄 **Next Phase Development**
 - [ ] Order tracking system with live updates
-- [ ] Vendor dashboard with real-time order management
+- [ ] Vendor dashboard with real-time order management  
 - [ ] Kitchen display system with live order feed
 - [ ] Push notifications for order status changes
 - [ ] Email notifications integration
+
+### 🐛 **Bug Fixes This Session**
+- [x] **Cart Count Inconsistency** - Fixed mismatch between badge and checkout
+- [x] **Reset Incomplete** - Now clears database cart data, not just session
+- [x] **Accumulated Test Data** - Debug tools to identify and clear old data
+- [x] **UI Proportions** - Compact special instructions textbox (50px height)
+- [x] **Form Consistency** - Unified textbox sizing across order modal and checkout
 
 ### 📋 **Future Enhancements**
 - [ ] QR code generation for tables
