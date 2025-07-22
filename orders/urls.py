@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import cashier_views
 
 app_name = 'orders'
 
@@ -14,9 +15,19 @@ urlpatterns = [
     path('table/<int:table_number>/track/', views.track_orders, name='track_orders'),
     path('table/<int:table_number>/history/', views.order_history, name='order_history'),
     path('track/<int:table_number>/', views.track_orders, name='track_orders_short'),
-    path('history/<int:table_number>/', views.order_history, name='order_history_short'),
 
-    # AJAX endpoints
+    # Cashier URLs
+    path('cashier/', cashier_views.cashier_dashboard, name='cashier_dashboard'),
+    path('cashier/mark-paid/<uuid:order_id>/', cashier_views.mark_order_paid, name='mark_order_paid'),
+    path('cashier/reset-table/<int:table_number>/', cashier_views.reset_table, name='reset_table'),
+    path('cashier/order/<uuid:order_id>/', cashier_views.order_details, name='cashier_order_details'),
+    path('cashier/tables-overview/', cashier_views.table_status_overview, name='table_status_overview'),
+    path('cashier/sales-report/', cashier_views.daily_sales_report, name='daily_sales_report'),
+
+    # WebSocket URL (handled by routing.py)
+    # path('ws/orders/<int:table_number>/', ...),
+
+    # API endpoints
     path('api/add-to-cart/', views.add_to_cart, name='add_to_cart'),
     path('api/update-cart-item/', views.update_cart_item, name='update_cart_item'),
     path('api/remove-from-cart/', views.remove_from_cart, name='remove_from_cart'),
@@ -28,5 +39,4 @@ urlpatterns = [
     path('api/status/', views.status_check, name='status_check'),
     path('api/clear-session/', views.clear_session, name='clear_session'),
     path('debug/cart/<int:table_number>/', views.debug_cart, name='debug_cart'),
-    path('debug/clear-cart/<int:table_number>/', views.clear_cart, name='clear_cart'),
 ]

@@ -12,6 +12,7 @@ class OrderStatus(models.TextChoices):
     PREPARING = 'preparing', 'Preparing'
     READY = 'ready', 'Ready'
     DELIVERED = 'delivered', 'Delivered'
+    PAID = 'paid', 'Paid'
     CANCELLED = 'cancelled', 'Cancelled'
 
 class Order(models.Model):
@@ -27,6 +28,7 @@ class Order(models.Model):
     confirmed_at = models.DateTimeField(null=True, blank=True)
     ready_at = models.DateTimeField(null=True, blank=True)
     delivered_at = models.DateTimeField(null=True, blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
     estimated_ready_time = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -57,12 +59,8 @@ class Order(models.Model):
         return max_prep_time or 15
 
     def save(self, *args, **kwargs):
-        """Override save to sync order status with items"""
+        """Override save to update timestamps"""
         super().save(*args, **kwargs)
-
-        # Sync item statuses when order status changes
-        if self.status in ['confirmed', 'preparing', 'ready', 'delivered', 'cancelled']:
-            self.items.update(status=self.status)
 
         # Update timestamps
         if self.status == 'confirmed' and not self.confirmed_at:
@@ -74,6 +72,9 @@ class Order(models.Model):
         elif self.status == 'delivered' and not self.delivered_at:
             self.delivered_at = timezone.now()
             super().save(update_fields=['delivered_at'])
+        elif self.status == 'paid' and not self.paid_at:
+            self.paid_at = timezone.now()
+            super().save(update_fields=['paid_at'])
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
@@ -82,7 +83,6 @@ class OrderItem(models.Model):
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
     special_instructions = models.TextField(blank=True)
-    status = models.CharField(max_length=20, choices=OrderStatus.choices, default=OrderStatus.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

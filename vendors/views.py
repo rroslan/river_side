@@ -47,7 +47,6 @@ def vendor_dashboard(request, vendor_id):
             'id': item.id,
             'name': item.menu_item.name,
             'quantity': item.quantity,
-            'status': item.status,
             'special_instructions': item.special_instructions,
             'preparation_time': item.menu_item.preparation_time
         })
@@ -125,48 +124,6 @@ def update_order_status(request, vendor_id):
             'success': True,
             'message': f'Order status updated from {old_status} to {new_status}',
             'order_id': str(order.id),
-            'new_status': new_status
-        })
-
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
-@login_required
-@require_http_methods(["POST"])
-def update_item_status(request, vendor_id):
-    """Update individual item status via AJAX"""
-    try:
-        vendor = get_object_or_404(Vendor, id=vendor_id)
-
-        # Check permission
-        if vendor.owner != request.user and not request.user.is_staff:
-            return JsonResponse({'error': 'Permission denied'}, status=403)
-
-        data = json.loads(request.body)
-        item_id = data.get('item_id')
-        new_status = data.get('status')
-
-        if not item_id or not new_status:
-            return JsonResponse({'error': 'Missing required fields'}, status=400)
-
-        if new_status not in [choice[0] for choice in OrderStatus.choices]:
-            return JsonResponse({'error': 'Invalid status'}, status=400)
-
-        order_item = get_object_or_404(OrderItem, id=item_id)
-
-        # Verify this item belongs to the vendor
-        if order_item.menu_item.category.vendor != vendor:
-            return JsonResponse({'error': 'This item does not belong to your vendor'}, status=403)
-
-        # Update item status
-        old_status = order_item.status
-        order_item.status = new_status
-        order_item.save()
-
-        return JsonResponse({
-            'success': True,
-            'message': f'Item status updated from {old_status} to {new_status}',
-            'item_id': item_id,
             'new_status': new_status
         })
 

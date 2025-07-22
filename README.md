@@ -18,11 +18,24 @@ A modern Django-based food court ordering system where customers can select tabl
 - **🛍️ Add to Cart** - Simple cart functionality with floating cart display
 - **🛒 Cart Status Badge** - Real-time inline badge with item count and total price
 - **📋 Checkout & Review** - Comprehensive order review with quantity controls
+- **📊 Order Tracking** - Real-time order status tracking from pending to delivered
+- **💳 Payment Processing** - Orders move through complete workflow to payment
 - **🔄 Complete Reset** - Clear all data (session, localStorage, database cart)
 - **🛠️ Debug Tools** - Cart debugging and troubleshooting endpoints
 - **📱 Responsive Design** - Works on desktop, tablet, and mobile
-- **⚡ Real-time Updates** - Live order status via WebSockets (in development)
-- **🔔 Live Notifications** - Instant alerts for order updates (planned)
+- **⚡ Real-time Updates** - Live order status via WebSockets
+- **🔔 Live Notifications** - Instant alerts for order updates
+
+### 💰 **Cashier & Staff Experience**
+- **💳 Payment Dashboard** - Dedicated cashier interface for processing payments
+- **📊 Order Management** - View all orders ready for payment with real-time stats
+- **🪑 Table Management** - Reset tables and cancel unpaid orders
+- **💵 Payment Methods** - Support for cash, card, mobile, and other payment types
+- **📈 Sales Reports** - Daily sales analytics and payment method breakdowns
+- **🔍 Order Details** - Comprehensive order viewing with customer and item details
+- **🎯 Status Filtering** - Filter orders by status, table, and date
+- **👥 Role-Based Access** - Cashier group permissions and staff access controls
+- **📝 Audit Trail** - Complete payment history and table reset logging
 
 ### 🏗️ **Technical Features**
 - **🎨 Modern UI** - DaisyUI + TailwindCSS with dark theme
@@ -118,13 +131,22 @@ Once the server is running, access different parts of the system:
 | 🍽️ **Menu** | `http://localhost:8000/table/{number}/menu/` | Browse and order from menu |
 | 🛒 **Checkout** | `http://localhost:8000/table/{number}/checkout/` | Review cart and place order |
 | 📊 **Track Orders** | `http://localhost:8000/table/{number}/track/` | Order status tracking |
+| 💰 **Cashier Dashboard** | `http://localhost:8000/cashier/` | Payment processing and table management |
 | ⚙️ **Admin Panel** | `http://localhost:8000/admin/` | Django admin interface |
 | 📊 **API Status** | `http://localhost:8000/api/status/` | System health check |
 
 ### 🔑 **Default Credentials**
+
+**Admin Access:**
 - **Username**: `admin`
 - **Password**: `admin123`
 - **Email**: `admin@riverside.com`
+
+**Cashier Access:**
+- **Username**: `cashier`
+- **Password**: `cashier123`
+- **Email**: `cashier@riveriderestaurant.com`
+- **Access**: Staff permissions + Cashiers group
 
 ## 🎯 User Workflow
 
@@ -138,9 +160,20 @@ Once the server is running, access different parts of the system:
 6. **📊 Cart Status** - See real-time cart count and total in header badge
 7. **📋 Checkout** - Review order, adjust quantities, add special instructions
 8. **💳 Place Order** - Submit order with loading and success confirmation
-9. **🔄 Complete Reset** - Clear all data (session, cart, localStorage) and restart
-10. **⚡ Real-time Tracking** - Live order status updates (in development)
-11. **🔔 Notifications** - Get notified when order status changes (planned)
+9. **📊 Track Order** - Monitor order status from pending → confirmed → preparing → ready → delivered
+10. **⚡ Real-time Updates** - Live order status updates via WebSockets
+11. **🔔 Notifications** - Get notified when order status changes
+
+### 💰 **Cashier Workflow**
+
+1. **🔐 Login** - Access cashier dashboard with staff credentials
+2. **📊 Dashboard** - View real-time statistics (orders today, unpaid orders, revenue)
+3. **👀 Order Management** - See all orders ready for payment with comprehensive filtering
+4. **💳 Process Payment** - Mark orders as paid with payment method selection (cash/card/mobile)
+5. **🪑 Table Reset** - Reset tables by cancelling unpaid orders for next customers
+6. **📋 Order Details** - View complete order information with customer and item details
+7. **📈 Sales Reports** - Access daily sales analytics and payment breakdowns
+8. **🔍 Filter & Search** - Find orders by status, table number, or date range
 
 ## 🛠️ Technical Architecture
 
@@ -392,6 +425,13 @@ river_side/
 - [x] Cart data synchronization fixes
 - [x] Responsive design with TailwindCSS
 - [x] Admin interface for data management
+- [x] **Cashier Dashboard** - Complete payment processing system
+- [x] **Payment Management** - Mark orders as paid with payment method tracking
+- [x] **Table Reset** - Cancel unpaid orders and clear tables
+- [x] **Order Status Workflow** - pending → confirmed → preparing → ready → delivered → paid
+- [x] **Role-Based Access** - Cashier group permissions and staff access
+- [x] **Sales Analytics** - Daily reports and payment method breakdowns
+- [x] **Real-time Updates** - Live order status via WebSockets
 
 ### 🚧 **Currently Implementing (Real-time Features)**
 - [x] **Django Channels Setup** - WebSocket support for real-time communication ✅
@@ -399,10 +439,10 @@ river_side/
 - [x] **Daphne ASGI Server** - Production-ready WebSocket server ✅
 - [x] **WebSocket Consumers** - Handle real-time order updates ✅
 - [x] **Channel Groups** - Organize connections by table/vendor/kitchen ✅
-- [ ] **Order Tracking System** - Live order status updates for customers (90% complete)
-- [ ] **Real-time Order Status** - Live updates when orders change status
-- [ ] **Vendor Notifications** - Instant alerts for new orders
-- [ ] **Kitchen Display** - Live dashboard showing all active orders
+- [x] **Order Tracking System** - Live order status updates for customers ✅
+- [x] **Real-time Order Status** - Live updates when orders change status ✅
+- [ ] **Vendor Notifications** - Instant alerts for new orders (80% complete)
+- [ ] **Kitchen Display** - Live dashboard showing all active orders (planned)
 
 ### 🔧 **Recently Improved**
 - [x] **Cart Data Consistency** - Fixed badge/checkout count discrepancies
@@ -410,41 +450,49 @@ river_side/
 - [x] **Debug Tools** - Cart inspection endpoints for troubleshooting
 - [x] **UI Polish** - Compact special instructions textbox with proper sizing
 - [x] **Form Optimization** - 50px height textbox with character limits and inline styles
-- [x] **Order Status Sync** - Automatic synchronization between order and item statuses
+- [x] **Item Status Architecture** - **MAJOR FIX**: Removed individual item status, only orders have status
+- [x] **Status Conflict Resolution** - Fixed "green tea ready status" issue by enforcing order-only status
 - [x] **Simplified Tracking** - Streamlined order tracking without redundant sections
 - [x] **WebSocket Support** - Fixed "Not Found" errors with proper ASGI server setup
 - [x] **Development Tools** - Added WebSocket-enabled server script and testing utilities
 - [x] **UI Cleanup** - Removed connection status and estimated time displays for cleaner interface
+- [x] **Payment Integration** - Complete cashier workflow with payment processing
+- [x] **Database Migrations** - Added paid_at timestamp and PAID status to order workflow
 
 ### 🔄 **Next Phase Development**
-- [ ] Order tracking system with live updates
-- [ ] Vendor dashboard with real-time order management  
-- [ ] Kitchen display system with live order feed
+- [ ] Enhanced vendor dashboard with real-time order management
+- [ ] Kitchen display system with live order feed for all vendors
 - [ ] Push notifications for order status changes
 - [ ] Email notifications integration
+- [ ] QR code generation for table ordering
+- [ ] Advanced analytics and reporting
+- [ ] Multi-location support
 
-### 🐛 **Bug Fixes This Session**
-- [x] **Cart Count Inconsistency** - Fixed mismatch between badge and checkout
-- [x] **Reset Incomplete** - Now clears database cart data, not just session
-- [x] **Accumulated Test Data** - Debug tools to identify and clear old data
-- [x] **UI Proportions** - Compact special instructions textbox (50px height)
-- [x] **Form Consistency** - Unified textbox sizing across order modal and checkout
-- [x] **Status Synchronization** - Fixed order/item status mismatches (9 orders corrected)
-- [x] **JavaScript Errors** - Fixed Alpine.js orderTracker function issues
-- [x] **Simplified UI** - Removed redundant pending order sections
+### 🐛 **Major Bug Fixes & System Improvements**
+- [x] **🚨 CRITICAL: Item Status Architecture** - **Complete system redesign**: Removed individual item status fields
+- [x] **🚨 FIXED: AttributeError on /track/4/** - Eliminated all `item.status` references causing crashes
+- [x] **🚨 Business Logic Enforcement** - Only orders have status now, items implicitly follow order status
+- [x] **🚨 Status Conflict Resolution** - Fixed "green tea ready status" issue when adding items to existing orders
+- [x] **Database Migration** - Safely removed OrderItem.status field and updated all related code
+- [x] **Code Cleanup** - Updated views, consumers, admin, signals, and templates
+- [x] **Management Commands** - Updated sync commands to reflect new architecture
 - [x] **WebSocket Connectivity** - Fixed "Not Found" errors by implementing proper ASGI support
 - [x] **Server Infrastructure** - Added Daphne ASGI server with Redis channel layers
-- [x] **Error Handling** - Added broken pipe middleware and comprehensive logging
-- [x] **Interface Streamlining** - Removed technical WebSocket status and time estimates from customer view
+- [x] **Cart Data Consistency** - Fixed mismatch between badge and checkout
+- [x] **Payment System Integration** - Complete cashier workflow with PAID status
+- [x] **Real-time Updates** - Live order status changes via WebSocket notifications
 
 ### 📋 **Future Enhancements**
-- [ ] QR code generation for tables
-- [ ] Payment integration (Stripe/PayPal)
-- [ ] Order history and analytics
-- [ ] Customer feedback system
-- [ ] Advanced analytics dashboard
-- [ ] Multi-language support
-- [ ] Mobile app development
+- [ ] External payment integration (Stripe/PayPal/Square)
+- [ ] Customer order history and favorites
+- [ ] Customer feedback and rating system
+- [ ] Inventory management integration
+- [ ] Multi-language support (i18n)
+- [ ] Mobile app development (React Native/Flutter)
+- [ ] Advanced analytics and business intelligence
+- [ ] Multi-restaurant/franchise support
+- [ ] Loyalty program integration
+- [ ] Integration with POS systems
 
 ## 🌐 Real-time Architecture Roadmap
 

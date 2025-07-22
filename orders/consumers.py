@@ -106,7 +106,6 @@ class OrderConsumer(AsyncWebsocketConsumer):
                         'unit_price': str(item.unit_price),
                         'subtotal': str(item.subtotal),
                         'vendor': item.vendor.name,
-                        'status': item.status,
                         'special_instructions': item.special_instructions
                     })
 
@@ -171,9 +170,6 @@ class VendorConsumer(AsyncWebsocketConsumer):
             if message_type == 'update_order_status':
                 await self.update_order_status(data)
 
-            elif message_type == 'update_item_status':
-                await self.update_item_status(data)
-
             elif message_type == 'get_orders':
                 orders = await self.get_vendor_orders()
                 await self.send(text_data=json.dumps({
@@ -211,26 +207,7 @@ class VendorConsumer(AsyncWebsocketConsumer):
                     }
                 )
 
-    async def update_item_status(self, data):
-        """Update individual item status"""
-        item_id = data.get('item_id')
-        new_status = data.get('status')
 
-        if not item_id or not new_status:
-            return
-
-        success = await self.set_item_status(item_id, new_status)
-        if success:
-            # Get order info and notify table
-            order_info = await self.get_order_from_item(item_id)
-            if order_info:
-                await self.channel_layer.group_send(
-                    f'table_{order_info["table_number"]}',
-                    {
-                        'type': 'order_update',
-                        'order': order_info
-                    }
-                )
 
     async def new_order_for_vendor(self, event):
         """Handle new order notification for vendor"""
@@ -282,7 +259,6 @@ class VendorConsumer(AsyncWebsocketConsumer):
                     'id': item.id,
                     'name': item.menu_item.name,
                     'quantity': item.quantity,
-                    'status': item.status,
                     'special_instructions': item.special_instructions,
                     'preparation_time': item.menu_item.preparation_time
                 })
@@ -312,17 +288,6 @@ class VendorConsumer(AsyncWebsocketConsumer):
             return False
 
     @database_sync_to_async
-    def set_item_status(self, item_id, new_status):
-        """Update order item status"""
-        try:
-            item = OrderItem.objects.get(id=item_id)
-            item.status = new_status
-            item.save()
-            return True
-        except OrderItem.DoesNotExist:
-            return False
-
-    @database_sync_to_async
     def get_order_details(self, order_id):
         """Get order details"""
         try:
@@ -349,7 +314,6 @@ class VendorConsumer(AsyncWebsocketConsumer):
                     'id': order_item.id,
                     'name': order_item.menu_item.name,
                     'quantity': order_item.quantity,
-                    'status': order_item.status,
                     'vendor': order_item.vendor.name
                 })
 
@@ -438,7 +402,6 @@ class KitchenConsumer(AsyncWebsocketConsumer):
                     'id': item.id,
                     'name': item.menu_item.name,
                     'quantity': item.quantity,
-                    'status': item.status,
                     'special_instructions': item.special_instructions
                 })
 

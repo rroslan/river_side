@@ -1150,14 +1150,12 @@ Court - Menu{% endblock %} {% block extra_css %}
                                             class="font-medium text-sm"
                                             x-text="item.quantity + 'x ' + item.name"
                                         ></div>
-                                        <div
-                                            class="text-xs"
-                                            :class="getStatusTextClass(item.status)"
-                                            x-text="item.status"
-                                        ></div>
+                                        <div class="text-xs text-gray-500">
+                                            Follows order status
+                                        </div>
                                     </div>
                                     <button
-                                        x-show="['pending', 'confirmed'].includes(item.status)"
+                                        x-show="['pending', 'confirmed'].includes(order.status)"
                                         @click="cancelOrderItem(item.id)"
                                         class="btn btn-ghost btn-xs text-error"
                                     >

@@ -44,6 +44,9 @@ def track_order_status_change(sender, instance, **kwargs):
                 elif instance.status == 'delivered' and not instance.delivered_at:
                     instance.delivered_at = now
 
+                elif instance.status == 'paid' and not instance.paid_at:
+                    instance.paid_at = now
+
                 # Create status history entry
                 OrderStatusHistory.objects.create(
                     order=instance,
@@ -164,7 +167,7 @@ def serialize_order_for_notification(order):
             'subtotal': str(item.subtotal),
             'vendor': item.vendor.name,
             'vendor_id': item.vendor.id,
-            'status': item.status,
+
             'special_instructions': item.special_instructions,
             'preparation_time': item.menu_item.preparation_time
         })
@@ -179,6 +182,7 @@ def serialize_order_for_notification(order):
         'confirmed_at': order.confirmed_at.isoformat() if order.confirmed_at else None,
         'ready_at': order.ready_at.isoformat() if order.ready_at else None,
         'delivered_at': order.delivered_at.isoformat() if order.delivered_at else None,
+        'paid_at': order.paid_at.isoformat() if order.paid_at else None,
         'estimated_ready_time': order.estimated_ready_time.isoformat() if order.estimated_ready_time else None,
         'customer_name': order.customer_name,
         'notes': order.notes,

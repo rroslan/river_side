@@ -3,6 +3,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.contrib import messages
+from django.http import HttpResponseRedirect
 from .models import Order, OrderItem, OrderStatusHistory, Cart, CartItem
 
 @admin.register(Order)
@@ -13,7 +14,7 @@ class OrderAdmin(admin.ModelAdmin):
     readonly_fields = ('id', 'created_at', 'updated_at', 'total_amount')
     list_editable = ()
     ordering = ('-created_at',)
-    actions = ['sync_item_statuses']
+    actions = ['cashier_dashboard_redirect']
 
     fieldsets = (
         ('Order Information', {
@@ -26,7 +27,7 @@ class OrderAdmin(admin.ModelAdmin):
             'fields': ('notes', 'estimated_ready_time')
         }),
         ('Timestamps', {
-            'fields': ('created_at', 'updated_at', 'confirmed_at', 'ready_at', 'delivered_at'),
+            'fields': ('created_at', 'updated_at', 'confirmed_at', 'ready_at', 'delivered_at', 'paid_at'),
             'classes': ('collapse',)
         }),
     )
@@ -43,51 +44,29 @@ class OrderAdmin(admin.ModelAdmin):
     vendor_list.short_description = 'Vendors'
 
     def status_with_warning(self, obj):
-        item_statuses = set(obj.items.values_list('status', flat=True))
-        if len(item_statuses) > 1 or (item_statuses and obj.status not in item_statuses):
-            return format_html(
-                '<span style="color: red;">⚠️ {}</span><br><small style="color: #666;">Items: {}</small>',
-                obj.status,
-                ', '.join(item_statuses) if item_statuses else 'None'
-            )
         return obj.status
     status_with_warning.short_description = 'Status'
     status_with_warning.admin_order_field = 'status'
 
-    def sync_item_statuses(self, request, queryset):
-        """Sync item statuses to match order status"""
-        updated_count = 0
-        for order in queryset:
-            item_count = order.items.update(status=order.status)
-            if item_count > 0:
-                updated_count += 1
+    def cashier_dashboard_redirect(self, request, queryset):
+        """Redirect to cashier dashboard"""
+        return HttpResponseRedirect('/cashier/')
+    cashier_dashboard_redirect.short_description = "Open Cashier Dashboard"
 
-        if updated_count:
-            messages.success(request, f'Successfully synced {updated_count} orders with their items.')
-        else:
-            messages.info(request, 'No status synchronization needed.')
-    sync_item_statuses.short_description = "Sync item statuses with order status"
 
-    def save_model(self, request, obj, form, change):
-        """Override save to sync item statuses when order status changes"""
-        super().save_model(request, obj, form, change)
 
-        # Check if status was changed and sync items
-        if change and 'status' in form.changed_data:
-            updated_items = obj.items.update(status=obj.status)
-            if updated_items > 0:
-                messages.info(request, f'Automatically synced {updated_items} items to {obj.status} status.')
+
 
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
     readonly_fields = ('subtotal',)
-    fields = ('menu_item', 'quantity', 'unit_price', 'subtotal', 'special_instructions', 'status')
+    fields = ('menu_item', 'quantity', 'unit_price', 'subtotal', 'special_instructions')
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ('order', 'menu_item', 'quantity', 'unit_price', 'subtotal', 'status')
-    list_filter = ('status', 'menu_item__category__vendor', 'created_at')
+    list_display = ('order', 'menu_item', 'quantity', 'unit_price', 'subtotal')
+    list_filter = ('menu_item__category__vendor', 'created_at')
     search_fields = ('order__id', 'menu_item__name', 'menu_item__category__vendor__name')
     readonly_fields = ('subtotal', 'created_at', 'updated_at')
 
@@ -96,7 +75,7 @@ class OrderItemAdmin(admin.ModelAdmin):
             'fields': ('order', 'menu_item', 'quantity', 'unit_price', 'subtotal')
         }),
         ('Details', {
-            'fields': ('special_instructions', 'status')
+            'fields': ('special_instructions',)
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),

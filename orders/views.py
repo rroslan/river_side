@@ -352,7 +352,7 @@ def track_orders(request, table_number):
                 'unit_price': str(item.unit_price),
                 'subtotal': str(item.subtotal),
                 'special_instructions': item.special_instructions,
-                'status': item.status,
+
                 'vendor': item.menu_item.category.vendor.name
             })
 
@@ -496,8 +496,7 @@ def get_table_items_status(request, table_number):
                     'quantity': item.quantity,
                     'unit_price': str(item.unit_price),
                     'subtotal': str(item.subtotal),
-                    'special_instructions': item.special_instructions,
-                    'status': item.status
+                    'special_instructions': item.special_instructions
                 })
 
             orders_data.append({
