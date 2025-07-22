@@ -36,6 +36,8 @@ A modern Django-based food court ordering system where customers can select tabl
 - **🎯 Status Filtering** - Filter orders by status, table, and date
 - **👥 Role-Based Access** - Cashier group permissions and staff access controls
 - **📝 Audit Trail** - Complete payment history and table reset logging
+- **📊 Vendor Analytics** - Revenue tracking and payment breakdown by vendor
+- **💼 Multi-vendor Support** - Separate payment tracking for each vendor
 
 ### 🏗️ **Technical Features**
 - **🎨 Modern UI** - DaisyUI + TailwindCSS with dark theme
@@ -132,7 +134,7 @@ Once the server is running, access different parts of the system:
 | 🛒 **Checkout** | `http://localhost:8000/table/{number}/checkout/` | Review cart and place order |
 | 📊 **Track Orders** | `http://localhost:8000/table/{number}/track/` | Order status tracking |
 | 🔐 **Cashier Login** | `http://localhost:8000/cashier/login/` | Dedicated cashier authentication |
-| 💰 **Cashier Dashboard** | `http://localhost:8000/cashier/` | Payment processing and table management |
+| 💰 **Cashier Dashboard** | `http://localhost:8000/cashier/` | Payment processing, table management, and vendor analytics |
 | ⚙️ **Admin Panel** | `http://localhost:8000/admin/` | Django admin interface |
 | 📊 **API Status** | `http://localhost:8000/api/status/` | System health check |
 
@@ -177,6 +179,8 @@ Once the server is running, access different parts of the system:
 6. **📋 Order Details** - View complete order information with customer and item details
 7. **📈 Sales Reports** - Access daily sales analytics and payment breakdowns
 8. **🔍 Filter & Search** - Find orders by status, table number, or date range
+9. **📊 Vendor Breakdown** - View payment status and revenue by vendor
+10. **💰 Revenue Analytics** - Track paid vs unpaid revenue for each vendor
 
 ## 🛠️ Technical Architecture
 
@@ -435,6 +439,8 @@ river_side/
 - [x] **Role-Based Access** - Cashier group permissions and staff access
 - [x] **Sales Analytics** - Daily reports and payment method breakdowns
 - [x] **Real-time Updates** - Live order status via WebSockets
+- [x] **Vendor Payment Tracking** - Revenue breakdown by vendor with paid/unpaid status
+- [x] **Payment Analytics** - Detailed payment reports and vendor-specific revenue tracking
 
 ### 🚧 **Currently Implementing (Real-time Features)**
 - [x] **Django Channels Setup** - WebSocket support for real-time communication ✅
@@ -461,6 +467,8 @@ river_side/
 - [x] **UI Cleanup** - Removed connection status and estimated time displays for cleaner interface
 - [x] **Payment Integration** - Complete cashier workflow with payment processing
 - [x] **Database Migrations** - Added paid_at timestamp and PAID status to order workflow
+- [x] **Vendor Payment Analytics** - Complete vendor-specific revenue tracking and payment breakdown
+- [x] **Payment Dashboard** - Vendor payment tabs showing paid/unpaid orders with revenue totals
 
 ### 🔄 **Next Phase Development**
 - [ ] Enhanced vendor dashboard with real-time order management

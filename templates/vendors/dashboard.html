@@ -113,72 +113,126 @@
             </div>
         </div>
 
-        <!-- Statistics Cards -->
+        <!-- Order Status Statistics -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div class="stats-card stats shadow">
                 <div class="stat place-items-center">
                     <div class="stat-title text-primary-content/70">Pending</div>
-                    <div class="stat-value text-primary-content" x-text="stats.pending"></div>
+                    <div class="stat-value text-primary-content">{{</div> stats.pending_orders }}</div>
                     <div class="stat-desc text-primary-content/60">Orders</div>
                 </div>
             </div>
 
             <div class="stats shadow bg-info text-info-content">
                 <div class="stat place-items-center">
-                    <div class="stat-title text-info-content/70">Confirmed</div>
-                    <div class="stat-value text-info-content" x-text="stats.confirmed"></div>
-                    <div class="stat-desc text-info-content/60">Orders</div>
-                </div>
-            </div>
-
-            <div class="stats shadow bg-warning text-warning-content">
-                <div class="stat place-items-center">
-                    <div class="stat-title text-warning-content/70">Preparing</div>
-                    <div class="stat-value text-warning-content preparing-pulse" x-text="stats.preparing"></div>
-                    <div class="stat-desc text-warning-content/60">Active</div>
+                    <div class="stat-title text-info-content/70">Preparing</div>
+                    <div class="stat-value text-info-content preparing-pulse">{{</div> stats.preparing_orders }}</div>
+                    <div class="stat-desc text-info-content/60">Active</div>
                 </div>
             </div>
 
             <div class="stats shadow bg-success text-success-content">
                 <div class="stat place-items-center">
                     <div class="stat-title text-success-content/70">Ready</div>
-                    <div class="stat-value text-success-content" x-text="stats.ready"></div>
+                    <div class="stat-value text-success-content">{{ stats.ready_orders }}</div>
                     <div class="stat-desc text-success-content/60">Pickup</div>
+                </div>
+            </div>
+
+            <div class="stats shadow bg-accent text-accent-content">
+                <div class="stat place-items-center">
+                    <div class="stat-title text-accent-content/70">Delivered</div>
+                    <div class="stat-value text-accent-content">{{ stats.delivered_orders }}</div>
+                    <div class="stat-desc text-accent-content/60">Ready for Payment</div>
                 </div>
             </div>
         </div>
 
-        <!-- Status Filter -->
-        <div class="tabs tabs-boxed mb-6 bg-base-200">
-            <button @click="activeFilter = 'all'"
-                    :class="activeFilter === 'all' ? 'tab-active' : ''"
-                    class="tab">
-                All Orders (<span x-text="filteredOrders.length"></span>)
-            </button>
-            <button @click="activeFilter = 'pending'"
-                    :class="activeFilter === 'pending' ? 'tab-active' : ''"
-                    class="tab">
-                Pending (<span x-text="ordersByStatus.pending.length"></span>)
-            </button>
-            <button @click="activeFilter = 'confirmed'"
-                    :class="activeFilter === 'confirmed' ? 'tab-active' : ''"
-                    class="tab">
-                Confirmed (<span x-text="ordersByStatus.confirmed.length"></span>)
-            </button>
-            <button @click="activeFilter = 'preparing'"
-                    :class="activeFilter === 'preparing' ? 'tab-active' : ''"
-                    class="tab">
-                Preparing (<span x-text="ordersByStatus.preparing.length"></span>)
-            </button>
-            <button @click="activeFilter = 'ready'"
-                    :class="activeFilter === 'ready' ? 'tab-active' : ''"
-                    class="tab">
-                Ready (<span x-text="ordersByStatus.ready.length"></span>)
-            </button>
+        <!-- Payment Statistics -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="stats shadow bg-emerald-500 text-white">
+                <div class="stat place-items-center">
+                    <div class="stat-title text-white/70">Today Revenue</div>
+                    <div class="stat-value text-white">${{ stats.today_revenue }}</div>
+                    <div class="stat-desc text-white/60">Paid Orders</div>
+                </div>
+            </div>
+
+            <div class="stats shadow bg-orange-500 text-white">
+                <div class="stat place-items-center">
+                    <div class="stat-title text-white/70">Unpaid Revenue</div>
+                    <div class="stat-value text-white">${{ stats.unpaid_revenue }}</div>
+                    <div class="stat-desc text-white/60">Awaiting Payment</div>
+                </div>
+            </div>
+
+            <div class="stats shadow bg-purple-500 text-white">
+                <div class="stat place-items-center">
+                    <div class="stat-title text-white/70">Paid Today</div>
+                    <div class="stat-value text-white">{{ stats.paid_orders_today }}</div>
+                    <div class="stat-desc text-white/60">Orders</div>
+                </div>
+            </div>
+
+            <div class="stats shadow bg-blue-500 text-white">
+                <div class="stat place-items-center">
+                    <div class="stat-title text-white/70">Total Paid</div>
+                    <div class="stat-value text-white">{{ stats.total_paid_orders }}</div>
+                    <div class="stat-desc text-white/60">All Time</div>
+                </div>
+            </div>
         </div>
 
-        <!-- Orders Grid -->
-        <div x-show="filteredOrders.length > 0" class="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <!-- Status Filter Tabs -->
+        <div class="flex flex-col lg:flex-row gap-4 mb-6">
+            <!-- Order Status Tabs -->
+            <div class="tabs tabs-boxed bg-base-200 flex-1">
+                <button @click="activeFilter = 'all'"
+                        :class="activeFilter === 'all' ? 'tab-active' : ''"
+                        class="tab">
+                    All Orders
+                </button>
+                <button @click="activeFilter = 'pending'"
+                        :class="activeFilter === 'pending' ? 'tab-active' : ''"
+                        class="tab">
+                    Pending ({{ stats.pending_orders }})
+                </button>
+                <button @click="activeFilter = 'preparing'"
+                        :class="activeFilter === 'preparing' ? 'tab-active' : ''"
+                        class="tab">
+                    Preparing ({{ stats.preparing_orders }})
+                </button>
+                <button @click="activeFilter = 'ready'"
+                        :class="activeFilter === 'ready' ? 'tab-active' : ''"
+                        class="tab">
+                    Ready ({{ stats.ready_orders }})
+                </button>
+                <button @click="activeFilter = 'delivered'"
+                        :class="activeFilter === 'delivered' ? 'tab-active' : ''"
+                        class="tab">
+                    Delivered ({{ stats.delivered_orders }})
+                </button>
+            </div>
+
+            <!-- Payment Status Tabs -->
+            <div class="tabs tabs-boxed bg-emerald-100">
+                <button @click="activeView = 'current'"
+                        :class="activeView === 'current' ? 'tab-active' : ''"
+                        class="tab">
+                    <i class="fas fa-clock mr-1"></i>
+                    Current Orders
+                </button>
+                <button @click="activeView = 'paid'"
+                        :class="activeView === 'paid' ? 'tab-active' : ''"
+                        class="tab">
+                    <i class="fas fa-dollar-sign mr-1"></i>
+                    Paid Orders ({{ stats.total_paid_orders }})
+                </button>
+            </div>
+        </div>
+
+        <!-- Current Orders Grid -->
+        <div x-show="activeView === 'current' && filteredOrders.length > 0" class="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
             <template x-for="orderGroup in filteredOrders" :key="orderGroup.order.id">
                 <div class="order-card card bg-base-200 shadow-xl"
                      :class="'order-' + orderGroup.order.status">
@@ -272,8 +326,81 @@
             </template>
         </div>
 
-        <!-- No Orders State -->
-        <div x-show="filteredOrders.length === 0" class="text-center py-16">
+        <!-- Paid Orders Grid -->
+        <div x-show="activeView === 'paid'" class="space-y-4">
+            {% for order_group in paid_orders %}
+            <div class="card bg-emerald-50 border border-emerald-200 shadow-lg">
+                <div class="card-body">
+                    <!-- Paid Order Header -->
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="card-title text-lg text-emerald-700">
+                                Table {{ order_group.order.table_number }}
+                            </h3>
+                            <div class="text-sm text-emerald-600">
+                                Order #{{ order_group.order.id|slice:":8" }}
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                Paid: {{ order_group.order.paid_at|date:"M d, H:i" }}
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-lg font-bold text-emerald-700">
+                                ${{ order_group.vendor_total|floatformat:2 }}
+                            </div>
+                            <div class="badge badge-success">PAID</div>
+                        </div>
+                    </div>
+
+                    <!-- Customer Info -->
+                    {% if order_group.order.customer_name %}
+                    <div class="mb-3">
+                        <div class="text-sm font-medium text-gray-700">
+                            Customer: {{ order_group.order.customer_name }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Paid Order Items -->
+                    <div class="space-y-2">
+                        {% for item in order_group.items %}
+                        <div class="flex justify-between items-center bg-white p-3 rounded border">
+                            <div class="flex-1">
+                                <span class="font-medium">{{ item.quantity }}x {{ item.name }}</span>
+                                {% if item.special_instructions %}
+                                <div class="text-sm text-gray-600 mt-1">
+                                    Note: {{ item.special_instructions }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="text-right">
+                                <div class="font-semibold text-emerald-600">${{ item.subtotal }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Payment Details -->
+                    {% if order_group.order.notes %}
+                    <div class="mt-4 p-3 bg-gray-50 rounded">
+                        <div class="text-sm text-gray-600">
+                            <strong>Payment Notes:</strong> {{ order_group.order.notes|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-16">
+                <div class="text-6xl mb-4">💰</div>
+                <h3 class="text-2xl font-bold text-emerald-700 mb-2">No Paid Orders</h3>
+                <p class="text-emerald-600">No orders have been paid yet.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- No Current Orders State -->
+        <div x-show="activeView === 'current' && filteredOrders.length === 0" class="text-center py-16">
             <div class="text-6xl mb-4">📋</div>
             <h3 class="text-2xl font-bold text-base-content/70 mb-2">No Orders</h3>
             <p class="text-base-content/50" x-text="getNoOrdersMessage()"></p>
@@ -294,6 +421,7 @@ function vendorDashboard() {
         // State
         orders: [],
         connected: false,
+        activeView: 'current',
         socket: null,
         activeFilter: 'all',
         lastUpdated: '',

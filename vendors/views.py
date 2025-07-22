@@ -19,10 +19,16 @@ def vendor_dashboard(request, vendor_id):
         messages.error(request, 'You do not have permission to access this vendor dashboard')
         return redirect('vendor_list')
 
-    # Get current orders for this vendor
+    # Get current orders for this vendor (including delivered orders for payment tracking)
     current_orders = OrderItem.objects.filter(
         menu_item__category__vendor=vendor,
-        order__status__in=['pending', 'confirmed', 'preparing', 'ready']
+        order__status__in=['pending', 'confirmed', 'preparing', 'ready', 'delivered']
+    ).select_related('order', 'menu_item').order_by('-order__created_at')
+
+    # Get paid orders for revenue tracking
+    paid_orders = OrderItem.objects.filter(
+        menu_item__category__vendor=vendor,
+        order__status='paid'
     ).select_related('order', 'menu_item').order_by('-order__created_at')
 
     # Group orders by order ID and serialize data
@@ -53,21 +59,75 @@ def vendor_dashboard(request, vendor_id):
 
     orders = list(orders_dict.values())
 
+    # Process paid orders for revenue tracking
+    paid_orders_dict = {}
+    for item in paid_orders:
+        order_id = item.order.id
+        if order_id not in paid_orders_dict:
+            paid_orders_dict[order_id] = {
+                'order': {
+                    'id': str(item.order.id),
+                    'table_number': item.order.table.number,
+                    'status': item.order.status,
+                    'total_amount': str(item.order.total_amount),
+                    'customer_name': item.order.customer_name,
+                    'created_at': item.order.created_at.isoformat(),
+                    'paid_at': item.order.paid_at.isoformat() if item.order.paid_at else None,
+                    'notes': item.order.notes
+                },
+                'items': [],
+                'vendor_total': 0
+            }
+
+        vendor_item_total = item.subtotal
+        paid_orders_dict[order_id]['vendor_total'] += float(vendor_item_total)
+        paid_orders_dict[order_id]['items'].append({
+            'id': item.id,
+            'name': item.menu_item.name,
+            'quantity': item.quantity,
+            'subtotal': str(item.subtotal),
+            'special_instructions': item.special_instructions,
+        })
+
+    paid_orders_list = list(paid_orders_dict.values())
+
     # Get statistics
     today = timezone.now().date()
+
+    # Calculate vendor-specific revenue
+    today_paid_items = OrderItem.objects.filter(
+        menu_item__category__vendor=vendor,
+        order__status='paid',
+        order__created_at__date=today
+    )
+    today_revenue = sum(float(item.subtotal) for item in today_paid_items)
+
+    # Calculate unpaid revenue (delivered orders ready for payment)
+    unpaid_items = OrderItem.objects.filter(
+        menu_item__category__vendor=vendor,
+        order__status__in=['delivered', 'ready']
+    )
+    unpaid_revenue = sum(float(item.subtotal) for item in unpaid_items)
+
     stats = {
-        'pending_orders': len([o for o in orders if o['order'].status == 'pending']),
-        'preparing_orders': len([o for o in orders if o['order'].status == 'preparing']),
-        'ready_orders': len([o for o in orders if o['order'].status == 'ready']),
+        'pending_orders': len([o for o in orders if o['order']['status'] == 'pending']),
+        'preparing_orders': len([o for o in orders if o['order']['status'] == 'preparing']),
+        'ready_orders': len([o for o in orders if o['order']['status'] == 'ready']),
+        'delivered_orders': len([o for o in orders if o['order']['status'] == 'delivered']),
+        'paid_orders_today': len([o for o in paid_orders_list if o['order']['created_at'][:10] == str(today)]),
         'todays_orders': OrderItem.objects.filter(
             menu_item__category__vendor=vendor,
             order__created_at__date=today
-        ).count()
+        ).count(),
+        'today_revenue': round(today_revenue, 2),
+        'unpaid_revenue': round(unpaid_revenue, 2),
+        'total_paid_orders': len(paid_orders_list)
     }
 
     context = {
         'vendor': vendor,
         'orders': orders,
+        'paid_orders': paid_orders_list,
         'stats': stats
     }
 
@@ -126,6 +186,124 @@ def update_order_status(request, vendor_id):
             'order_id': str(order.id),
             'new_status': new_status
         })
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def vendor_payment_report(request, vendor_id):
+    """API endpoint for vendor payment analytics"""
+    try:
+        vendor = get_object_or_404(Vendor, id=vendor_id)
+
+        # Check permission
+        if vendor.owner != request.user and not request.user.is_staff:
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+
+        # Get date range from request
+        from datetime import datetime, timedelta
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=30)  # Default to last 30 days
+
+        if request.GET.get('start_date'):
+            start_date = datetime.strptime(request.GET.get('start_date'), '%Y-%m-%d').date()
+        if request.GET.get('end_date'):
+            end_date = datetime.strptime(request.GET.get('end_date'), '%Y-%m-%d').date()
+
+        # Get vendor items in date range
+        vendor_items = OrderItem.objects.filter(
+            menu_item__category__vendor=vendor,
+            order__created_at__date__range=[start_date, end_date]
+        ).select_related('order', 'menu_item')
+
+        # Separate paid and unpaid
+        paid_items = vendor_items.filter(order__status='paid')
+        unpaid_items = vendor_items.filter(order__status__in=['pending', 'confirmed', 'preparing', 'ready', 'delivered'])
+
+        # Calculate totals
+        paid_revenue = sum(float(item.subtotal) for item in paid_items)
+        unpaid_revenue = sum(float(item.subtotal) for item in unpaid_items)
+
+        # Group by date for trend analysis
+        daily_revenue = {}
+        for item in paid_items:
+            date_key = item.order.created_at.date().isoformat()
+            if date_key not in daily_revenue:
+                daily_revenue[date_key] = 0
+            daily_revenue[date_key] += float(item.subtotal)
+
+        # Top selling items
+        from collections import defaultdict
+        item_sales = defaultdict(lambda: {'quantity': 0, 'revenue': 0, 'orders': 0})
+        order_ids = set()
+
+        for item in paid_items:
+            key = item.menu_item.name
+            item_sales[key]['quantity'] += item.quantity
+            item_sales[key]['revenue'] += float(item.subtotal)
+            if item.order.id not in order_ids:
+                item_sales[key]['orders'] += 1
+                order_ids.add(item.order.id)
+
+        top_items = sorted(
+            item_sales.items(),
+            key=lambda x: x[1]['revenue'],
+            reverse=True
+        )[:10]
+
+        # Payment method breakdown (from order notes)
+        payment_methods = {'cash': 0, 'card': 0, 'mobile': 0, 'other': 0}
+        for item in paid_items:
+            payment_amount = float(item.subtotal)
+            if 'cash' in item.order.notes.lower():
+                payment_methods['cash'] += payment_amount
+            elif 'card' in item.order.notes.lower():
+                payment_methods['card'] += payment_amount
+            elif 'mobile' in item.order.notes.lower():
+                payment_methods['mobile'] += payment_amount
+            else:
+                payment_methods['other'] += payment_amount
+
+        report_data = {
+            'vendor_name': vendor.name,
+            'date_range': {
+                'start': start_date.isoformat(),
+                'end': end_date.isoformat()
+            },
+            'summary': {
+                'paid_revenue': round(paid_revenue, 2),
+                'unpaid_revenue': round(unpaid_revenue, 2),
+                'total_revenue': round(paid_revenue + unpaid_revenue, 2),
+                'paid_orders': len(set(item.order.id for item in paid_items)),
+                'unpaid_orders': len(set(item.order.id for item in unpaid_items)),
+                'total_items_sold': sum(item.quantity for item in paid_items),
+                'average_order_value': round(paid_revenue / len(set(item.order.id for item in paid_items)) if paid_items else 0, 2)
+            },
+            'daily_revenue': daily_revenue,
+            'payment_methods': payment_methods,
+            'top_items': [
+                {
+                    'name': name,
+                    'quantity': data['quantity'],
+                    'revenue': round(data['revenue'], 2),
+                    'orders': data['orders']
+                }
+                for name, data in top_items
+            ],
+            'unpaid_orders_detail': [
+                {
+                    'order_id': str(item.order.id)[:8],
+                    'table_number': item.order.table.number,
+                    'status': item.order.status,
+                    'vendor_amount': float(item.subtotal),
+                    'created_at': item.order.created_at.isoformat(),
+                    'customer_name': item.order.customer_name
+                }
+                for item in unpaid_items.order_by('-order__created_at')[:20]  # Latest 20
+            ]
+        }
+
+        return JsonResponse(report_data)
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

@@ -124,10 +124,39 @@ def cashier_dashboard(request):
     # Get all active tables for filter dropdown
     active_tables = Table.objects.filter(is_active=True).order_by('number')
 
+    # Get vendor payment breakdown
+    vendor_breakdown = []
+    from vendors.models import Vendor
+    for vendor in Vendor.objects.all():
+        # Calculate vendor-specific revenue for today
+        vendor_paid_items = OrderItem.objects.filter(
+            menu_item__category__vendor=vendor,
+            order__status='paid',
+            order__created_at__date=today
+        )
+        vendor_unpaid_items = OrderItem.objects.filter(
+            menu_item__category__vendor=vendor,
+            order__status__in=['delivered', 'ready']
+        )
+
+        paid_revenue = sum(float(item.subtotal) for item in vendor_paid_items)
+        unpaid_revenue = sum(float(item.subtotal) for item in vendor_unpaid_items)
+
+        if paid_revenue > 0 or unpaid_revenue > 0:
+            vendor_breakdown.append({
+                'vendor': vendor,
+                'paid_revenue': round(paid_revenue, 2),
+                'unpaid_revenue': round(unpaid_revenue, 2),
+                'total_revenue': round(paid_revenue + unpaid_revenue, 2),
+                'paid_orders': len(set(item.order.id for item in vendor_paid_items)),
+                'unpaid_orders': len(set(item.order.id for item in vendor_unpaid_items))
+            })
+
     context = {
         'page_obj': page_obj,
         'stats': stats,
         'active_tables': active_tables,
+        'vendor_breakdown': vendor_breakdown,
         'current_filters': {
             'status': status_filter,
             'table': table_filter,

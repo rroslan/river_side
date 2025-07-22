@@ -14,6 +14,6 @@ urlpatterns = [
 
     # AJAX endpoints for vendor operations
     path('<int:vendor_id>/api/update-order-status/', views.update_order_status, name='update_order_status'),
-
+    path('<int:vendor_id>/api/payment-report/', views.vendor_payment_report, name='vendor_payment_report'),
     path('<int:vendor_id>/api/toggle-menu-item/', views.toggle_menu_item, name='toggle_menu_item'),
 ]
