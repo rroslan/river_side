@@ -25,6 +25,17 @@ def check_redis():
         print("💡 To install Redis: sudo apt-get install redis-server")
         return False
 
+def check_http2_support():
+    """Check if HTTP/2 support is available"""
+    try:
+        import h2
+        print("✅ HTTP/2 support available - enhanced performance enabled")
+        return True
+    except ImportError:
+        print("ℹ️  HTTP/2 support not available (optional)")
+        print("💡 To enable HTTP/2: pip install twisted[http2,tls]")
+        return False
+
 def run_server(host='127.0.0.1', port=8000, verbosity=1):
     """Run the development server with ASGI support"""
 
@@ -35,6 +46,9 @@ def run_server(host='127.0.0.1', port=8000, verbosity=1):
 
     # Check Redis status
     check_redis()
+
+    # Check HTTP/2 support
+    check_http2_support()
 
     # Set Django settings module
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
