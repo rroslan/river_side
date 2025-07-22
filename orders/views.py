@@ -324,7 +324,7 @@ def place_order(request, table_number):
             return JsonResponse({
                 'success': True,
                 'order_id': str(order.id),
-                'redirect_url': f'/orders/track/{table_number}/'
+                'redirect_url': f'/track/{table_number}/'
             })
 
     except Exception as e:

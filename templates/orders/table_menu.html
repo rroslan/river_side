@@ -1741,7 +1741,7 @@ Court - Menu{% endblock %} {% block extra_css %}
 
                     // Redirect to tracking page
                     setTimeout(() => {
-                        window.location.href = `/orders/track/${this.selectedTable.number}/`;
+                        window.location.href = `/track/${this.selectedTable.number}/`;
                     }, 1500);
                 } catch (error) {
                     console.error("Error placing order:", error);
