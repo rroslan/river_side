@@ -13,6 +13,8 @@ urlpatterns = [
     path('table/<int:table_number>/checkout/', views.checkout, name='checkout'),
     path('table/<int:table_number>/track/', views.track_orders, name='track_orders'),
     path('table/<int:table_number>/history/', views.order_history, name='order_history'),
+    path('track/<int:table_number>/', views.track_orders, name='track_orders_short'),
+    path('history/<int:table_number>/', views.order_history, name='order_history_short'),
 
     # AJAX endpoints
     path('api/add-to-cart/', views.add_to_cart, name='add_to_cart'),

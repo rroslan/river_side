@@ -1,9 +1,5 @@
-{% extends 'base.html' %}
-{% load static %}
-
-{% block title %}Find Your Orders - River Side Food Court{% endblock %}
-
-{% block extra_css %}
+{% extends 'base.html' %} {% load static %} {% block title %}Find Your Orders -
+River Side Food Court{% endblock %} {% block extra_css %}
 <style>
     .search-container {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -31,12 +27,10 @@
 
     .search-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
     }
 </style>
-{% endblock %}
-
-{% block content %}
+{% endblock %} {% block content %}
 <div class="search-container">
     <div class="container mx-auto px-4">
         <div class="max-w-md mx-auto">
@@ -56,7 +50,9 @@
                     <form id="table-search-form" class="space-y-6">
                         <div class="form-control">
                             <label class="label">
-                                <span class="label-text text-white font-medium">Table Number</span>
+                                <span class="label-text text-white font-medium"
+                                    >Table Number</span
+                                >
                             </label>
                             <input
                                 type="number"
@@ -67,7 +63,7 @@
                                 max="50"
                                 required
                                 autofocus
-                            >
+                            />
                         </div>
 
                         <button
@@ -75,8 +71,18 @@
                             class="btn btn-primary btn-lg w-full search-btn"
                             id="search-btn"
                         >
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            <svg
+                                class="w-5 h-5 mr-2"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                ></path>
                             </svg>
                             Find My Orders
                         </button>
@@ -86,12 +92,16 @@
                     <div class="divider text-white/60">or</div>
 
                     <div class="space-y-3">
-                        <a href="{% url 'orders:table_selection' %}" class="btn btn-outline btn-sm text-white border-white/50 hover:bg-white hover:text-primary">
+                        <a
+                            href="{% url 'orders:table_selection' %}"
+                            class="btn btn-outline btn-sm text-white border-white/50 hover:bg-white hover:text-primary"
+                        >
                             📱 Place New Order
                         </a>
 
                         <div class="text-xs text-white/60">
-                            Don't know your table number? Check the number on your table.
+                            Don't know your table number? Check the number on
+                            your table.
                         </div>
                     </div>
                 </div>
@@ -104,17 +114,20 @@
 <div class="bg-base-100 py-12">
     <div class="container mx-auto px-4">
         <div class="max-w-4xl mx-auto">
-            <h2 class="text-2xl font-bold text-center mb-8">🚀 Quick Table Access</h2>
+            <h2 class="text-2xl font-bold text-center mb-8">
+                🚀 Quick Table Access
+            </h2>
 
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {% for i in "123456789012345678901234"|make_list %}
-                    {% if forloop.counter <= 24 %}
-                    <a href="{% url 'orders:track_orders' forloop.counter %}"
-                       class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200">
-                        Table {{ forloop.counter }}
-                    </a>
-                    {% endif %}
-                {% endfor %}
+                {% for i in "123456789012345678901234"|make_list %} {% if
+                forloop.counter <= 24 %}
+                <a
+                    href="{% url 'orders:track_orders_short' forloop.counter %}"
+                    class="btn btn-outline btn-lg hover:btn-primary transition-all duration-200"
+                >
+                    Table {{ forloop.counter }}
+                </a>
+                {% endif %} {% endfor %}
             </div>
 
             <div class="text-center mt-8">
@@ -131,13 +144,20 @@
     <div class="modal-box">
         <h3 class="font-bold text-lg text-error">Table Not Found</h3>
         <p class="py-4" id="error-message">
-            We couldn't find any orders for this table. Please check the table number or place a new order.
+            We couldn't find any orders for this table. Please check the table
+            number or place a new order.
         </p>
         <div class="modal-action">
-            <button class="btn btn-outline" onclick="document.getElementById('error-modal').classList.remove('modal-open')">
+            <button
+                class="btn btn-outline"
+                onclick="document.getElementById('error-modal').classList.remove('modal-open')"
+            >
                 Try Again
             </button>
-            <a href="{% url 'orders:table_selection' %}" class="btn btn-primary">
+            <a
+                href="{% url 'orders:table_selection' %}"
+                class="btn btn-primary"
+            >
                 Place New Order
             </a>
         </div>
@@ -154,79 +174,85 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('table-search-form');
-    const tableInput = document.getElementById('table-number');
-    const searchBtn = document.getElementById('search-btn');
-    const loadingModal = document.getElementById('loading-modal');
-    const errorModal = document.getElementById('error-modal');
+    document.addEventListener("DOMContentLoaded", function () {
+        const form = document.getElementById("table-search-form");
+        const tableInput = document.getElementById("table-number");
+        const searchBtn = document.getElementById("search-btn");
+        const loadingModal = document.getElementById("loading-modal");
+        const errorModal = document.getElementById("error-modal");
 
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
+        form.addEventListener("submit", async function (e) {
+            e.preventDefault();
 
-        const tableNumber = tableInput.value.trim();
+            const tableNumber = tableInput.value.trim();
 
-        if (!tableNumber) {
-            showError('Please enter a table number');
-            return;
-        }
-
-        if (tableNumber < 1 || tableNumber > 50) {
-            showError('Please enter a table number between 1 and 50');
-            return;
-        }
-
-        // Show loading
-        loadingModal.classList.add('modal-open');
-        searchBtn.disabled = true;
-
-        try {
-            // Check if table exists and has orders
-            const response = await fetch(`/api/table-status/${tableNumber}/`);
-
-            if (response.ok) {
-                const data = await response.json();
-
-                // Hide loading
-                loadingModal.classList.remove('modal-open');
-
-                if (data.has_orders) {
-                    // Redirect to track orders
-                    window.location.href = `/orders/track/${tableNumber}/`;
-                } else {
-                    // Show no orders message
-                    showError(`No active orders found for Table ${tableNumber}. Would you like to place a new order?`);
-                }
-            } else if (response.status === 404) {
-                loadingModal.classList.remove('modal-open');
-                showError(`Table ${tableNumber} not found. Please check the table number.`);
-            } else {
-                throw new Error('Failed to check table status');
+            if (!tableNumber) {
+                showError("Please enter a table number");
+                return;
             }
-        } catch (error) {
-            console.error('Error checking table:', error);
-            loadingModal.classList.remove('modal-open');
-            showError('Something went wrong. Please try again.');
-        } finally {
-            searchBtn.disabled = false;
+
+            if (tableNumber < 1 || tableNumber > 50) {
+                showError("Please enter a table number between 1 and 50");
+                return;
+            }
+
+            // Show loading
+            loadingModal.classList.add("modal-open");
+            searchBtn.disabled = true;
+
+            try {
+                // Check if table exists and has orders
+                const response = await fetch(
+                    `/api/table-status/${tableNumber}/`,
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Hide loading
+                    loadingModal.classList.remove("modal-open");
+
+                    if (data.has_orders) {
+                        // Redirect to track orders
+                        window.location.href = `/track/${tableNumber}/`;
+                    } else {
+                        // Show no orders message
+                        showError(
+                            `No active orders found for Table ${tableNumber}. Would you like to place a new order?`,
+                        );
+                    }
+                } else if (response.status === 404) {
+                    loadingModal.classList.remove("modal-open");
+                    showError(
+                        `Table ${tableNumber} not found. Please check the table number.`,
+                    );
+                } else {
+                    throw new Error("Failed to check table status");
+                }
+            } catch (error) {
+                console.error("Error checking table:", error);
+                loadingModal.classList.remove("modal-open");
+                showError("Something went wrong. Please try again.");
+            } finally {
+                searchBtn.disabled = false;
+            }
+        });
+
+        function showError(message) {
+            document.getElementById("error-message").textContent = message;
+            errorModal.classList.add("modal-open");
         }
+
+        // Allow Enter key to submit
+        tableInput.addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+                form.dispatchEvent(new Event("submit"));
+            }
+        });
+
+        // Auto-focus and select text on page load
+        tableInput.focus();
+        tableInput.select();
     });
-
-    function showError(message) {
-        document.getElementById('error-message').textContent = message;
-        errorModal.classList.add('modal-open');
-    }
-
-    // Allow Enter key to submit
-    tableInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            form.dispatchEvent(new Event('submit'));
-        }
-    });
-
-    // Auto-focus and select text on page load
-    tableInput.focus();
-    tableInput.select();
-});
 </script>
 {% endblock %}
