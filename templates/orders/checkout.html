@@ -232,13 +232,29 @@
         <div id="success-modal" class="modal">
             <div class="modal-box">
                 <h3 class="font-bold text-lg text-success">Order Placed Successfully! 🎉</h3>
-                <p class="py-4">Your order has been submitted and sent to the kitchen. You'll receive updates on your order status.</p>
+                <div class="py-4">
+                    <p class="mb-3">Your order has been submitted to the vendors for confirmation.</p>
+                    <div class="alert alert-info">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div>
+                            <p class="font-medium">Next Steps:</p>
+                            <p class="text-sm">1. Vendors will review and confirm your order</p>
+                            <p class="text-sm">2. You'll be able to track progress once confirmed</p>
+                            <p class="text-sm">3. We'll notify you when items are ready for pickup</p>
+                        </div>
+                    </div>
+                </div>
                 <div class="modal-action">
-                    <a href="{% url 'orders:track_orders' table.number %}" class="btn btn-primary">
-                        Track Your Order
+                    <a href="{% url 'orders:table_menu' table.number %}" class="btn btn-primary">
+                        Continue Shopping
+                    </a>
+                    <a href="{% url 'orders:track_orders' table.number %}" class="btn btn-outline">
+                        Check Status Later
                     </a>
                     <a href="{% url 'orders:table_selection' %}" class="btn btn-ghost">
-                        Start New Order
+                        New Table
                     </a>
                 </div>
             </div>
