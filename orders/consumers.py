@@ -145,10 +145,12 @@ class VendorConsumer(AsyncWebsocketConsumer):
             return
 
         # Join vendor group
+        logger.info(f"VendorConsumer: Adding channel {self.channel_name} to group {self.vendor_group_name}")
         await self.channel_layer.group_add(
             self.vendor_group_name,
             self.channel_name
         )
+        logger.info(f"VendorConsumer: Successfully joined group {self.vendor_group_name}")
 
         await self.accept()
         logger.info(f"VendorConsumer: Connection accepted for vendor {self.vendor_id}")
@@ -269,6 +271,7 @@ class VendorConsumer(AsyncWebsocketConsumer):
 
     async def order_update(self, event):
         """Handle order update broadcast"""
+        logger.info(f"VendorConsumer.order_update: Received for vendor {self.vendor_id}")
         # Don't send to self if we initiated the update
         if event.get('sender_channel_name') != self.channel_name:
             await self.send(text_data=json.dumps({
@@ -278,6 +281,9 @@ class VendorConsumer(AsyncWebsocketConsumer):
 
     async def new_order_for_vendor(self, event):
         """Handle new order notification for vendor"""
+        logger.info(f"VendorConsumer.new_order_for_vendor: Received event for vendor {self.vendor_id}")
+        logger.info(f"VendorConsumer.new_order_for_vendor: Order ID: {event.get('order', {}).get('id')}")
+
         # Format the order data to match the expected structure
         order_data = event['order']
 
@@ -309,10 +315,14 @@ class VendorConsumer(AsyncWebsocketConsumer):
 
         # Only send if vendor has items in this order
         if vendor_items:
+            logger.info(f"VendorConsumer: Sending new_order_for_vendor to vendor {self.vendor_id} with {len(vendor_items)} items")
             await self.send(text_data=json.dumps({
                 'type': 'new_order_for_vendor',
                 'order': formatted_order
             }))
+            logger.info(f"VendorConsumer: new_order_for_vendor sent successfully to vendor {self.vendor_id}")
+        else:
+            logger.info(f"VendorConsumer: No items for vendor {self.vendor_id} in this order, not sending")
 
     @database_sync_to_async
     def check_vendor_permission(self):

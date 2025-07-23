@@ -12,15 +12,18 @@ channel_layer = get_channel_layer()
 @receiver(post_save, sender=Order)
 def order_created_or_updated(sender, instance, created, **kwargs):
     """Send real-time notification when order is created or updated"""
+    logger.info(f"Signal order_created_or_updated fired - created: {created}, order_id: {instance.id}")
     try:
         if created:
             # New order created - notify all relevant parties
+            logger.info(f"New order created: {instance.id}, table: {instance.table.number}")
             send_new_order_notification(instance)
         else:
             # Order updated - notify table and vendors
+            logger.info(f"Order updated: {instance.id}, status: {instance.status}")
             send_order_update_notification(instance)
     except Exception as e:
-        logger.error(f"Error in order_created_or_updated signal: {e}")
+        logger.error(f"Error in order_created_or_updated signal: {e}", exc_info=True)
 
 @receiver(pre_save, sender=Order)
 def track_order_status_change(sender, instance, **kwargs):
@@ -68,10 +71,13 @@ def order_item_updated(sender, instance, created, **kwargs):
 
 def send_new_order_notification(order):
     """Send new order notification to all relevant channels"""
+    logger.info(f"send_new_order_notification called for order {order.id}")
     order_data = serialize_order_for_notification(order)
+    logger.info(f"Order data serialized: {order_data.get('id')}, table: {order_data.get('table_number')}")
 
     # Notify customer table
     table_group = f'table_{order.table.number}'
+    logger.info(f"Sending to table group: {table_group}")
     async_to_sync(channel_layer.group_send)(table_group, {
         'type': 'new_order',
         'order': order_data
@@ -84,14 +90,18 @@ def send_new_order_notification(order):
         for item in order.items.all():
             vendor_ids.add(item.menu_item.category.vendor.id)
 
+        logger.info(f"Order has items from vendors: {vendor_ids}")
+
         for vendor_id in vendor_ids:
             vendor_group = f'vendor_{vendor_id}'
+            logger.info(f"Sending new_order_for_vendor to group: {vendor_group}")
             async_to_sync(channel_layer.group_send)(vendor_group, {
                 'type': 'new_order_for_vendor',
                 'order': order_data
             })
+            logger.info(f"Notification sent to vendor group: {vendor_group}")
     except Exception as e:
-        logger.error(f"Error notifying vendors: {e}")
+        logger.error(f"Error notifying vendors: {e}", exc_info=True)
 
 
 
