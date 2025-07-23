@@ -62,9 +62,14 @@ def track_order_status_change(sender, instance, **kwargs):
 
 @receiver(post_save, sender=OrderItem)
 def order_item_updated(sender, instance, created, **kwargs):
-    """Send notification when order item is updated"""
+    """Send notification when order item is created or updated"""
     try:
-        if not created:  # Only for updates, not creation
+        if created:
+            # New item added to order - notify vendor
+            logger.info(f"New order item created: {instance.id} for order {instance.order.id}")
+            send_new_order_notification_for_item(instance)
+        else:
+            # Existing item updated
             send_order_item_update_notification(instance)
     except Exception as e:
         logger.error(f"Error in order_item_updated signal: {e}")
@@ -190,6 +195,32 @@ def serialize_order_for_notification(order):
         'notes': order.notes,
         'items': items
     }
+
+def send_new_order_notification_for_item(order_item):
+    """Send new order notification when an item is added to an order"""
+    order = order_item.order
+    vendor_id = order_item.menu_item.category.vendor.id
+
+    logger.info(f"send_new_order_notification_for_item called for order {order.id}, vendor {vendor_id}")
+
+    # Only notify if this is the first notification for this vendor
+    # Check if this vendor already has items in this order
+    existing_items = OrderItem.objects.filter(
+        order=order,
+        menu_item__category__vendor_id=vendor_id
+    ).exclude(id=order_item.id).exists()
+
+    if not existing_items and order.status == 'pending':
+        # This is the first item for this vendor in this order
+        order_data = serialize_order_for_notification(order)
+        vendor_group = f'vendor_{vendor_id}'
+
+        logger.info(f"Sending new_order_for_vendor to group: {vendor_group}")
+        async_to_sync(channel_layer.group_send)(vendor_group, {
+            'type': 'new_order_for_vendor',
+            'order': order_data
+        })
+        logger.info(f"Notification sent to vendor group: {vendor_group}")
 
 def send_order_status_change_notification(order, old_status, new_status, message=""):
     """Send specific status change notification"""
