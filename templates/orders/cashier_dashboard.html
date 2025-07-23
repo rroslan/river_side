@@ -587,36 +587,52 @@
                     // Add new rows
                     orders.forEach(order => {
                         const row = this.createOrderRow(order);
-                        tbody.appendChild(row);
+                        if (row) {
+                            tbody.appendChild(row);
+                        }
                     });
                 },
 
                 createOrderRow(order) {
+                    // Validate order object
+                    if (!order || !order.id) {
+                        console.error('Invalid order object:', order);
+                        return null;
+                    }
+
                     const tr = document.createElement('tr');
                     tr.className = 'hover:bg-gray-50';
                     tr.setAttribute('data-order-id', order.id);
 
+                    // Safely handle potentially missing fields
+                    const tableNumber = order.table_number || 'N/A';
+                    const orderId = order.id || '';
+                    const customerName = order.customer_name || 'Guest';
+                    const status = order.status || 'unknown';
+                    const totalAmount = order.total_amount ? parseFloat(order.total_amount).toFixed(2) : '0.00';
+                    const timeElapsed = order.time_elapsed || 'Just now';
+
                     tr.innerHTML = `
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            ${order.table_number}
+                            ${tableNumber}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            #${order.id.slice(0, 8)}
+                            #${orderId.slice(0, 8)}
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-900">
-                            ${order.customer_name}
+                            ${customerName}
                         </td>
                         <td class="px-6 py-4 text-sm">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                ${order.status === 'ready' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
-                                ${order.status.toUpperCase()}
+                                ${status === 'ready' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                ${status.toUpperCase()}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                            $${parseFloat(order.total_amount).toFixed(2)}
+                            $${totalAmount}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            ${order.time_elapsed}
+                            ${timeElapsed}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                             <button onclick="Alpine.$data(this).viewOrderDetails('${order.id}')"
@@ -637,6 +653,12 @@
                     const tbody = document.querySelector('#ordersTable tbody');
                     if (!tbody) return;
 
+                    // Validate order
+                    if (!order || !order.id) {
+                        console.error('Invalid order in addNewOrder:', order);
+                        return;
+                    }
+
                     // Check if order already exists
                     const existing = tbody.querySelector(`[data-order-id="${order.id}"]`);
                     if (existing) {
@@ -645,7 +667,9 @@
 
                     // Add new order at the top
                     const row = this.createOrderRow(order);
-                    tbody.insertBefore(row, tbody.firstChild);
+                    if (row) {
+                        tbody.insertBefore(row, tbody.firstChild);
+                    }
                 },
 
                 removeOrder(orderId) {

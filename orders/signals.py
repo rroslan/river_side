@@ -231,11 +231,30 @@ def notify_cashier_order_ready(order):
     logger.info(f"notify_cashier_order_ready called for order {order.id}, status: {order.status}")
 
     try:
-        order_data = serialize_order_for_notification(order)
+        # Calculate time elapsed
+        from django.utils import timezone
+        time_diff = timezone.now() - order.created_at
+        hours = int(time_diff.total_seconds() // 3600)
+        minutes = int((time_diff.total_seconds() % 3600) // 60)
 
-        # Calculate cashier-specific data
-        from orders.consumers import CashierConsumer
-        cashier_consumer = CashierConsumer()
+        if hours > 0:
+            time_elapsed = f"{hours}h {minutes}m ago"
+        else:
+            time_elapsed = f"{minutes}m ago"
+
+        # Group items by vendor
+        vendor_items = {}
+        for item in order.items.all():
+            vendor_name = item.menu_item.category.vendor.name
+            if vendor_name not in vendor_items:
+                vendor_items[vendor_name] = []
+
+            vendor_items[vendor_name].append({
+                'name': item.menu_item.name,
+                'quantity': item.quantity,
+                'price': str(item.unit_price),
+                'subtotal': str(item.subtotal)
+            })
 
         # Send to cashier dashboard group
         async_to_sync(channel_layer.group_send)('cashier_dashboard', {
@@ -249,7 +268,8 @@ def notify_cashier_order_ready(order):
                 'total_amount': str(order.total_amount),
                 'created_at': order.created_at.isoformat(),
                 'customer_name': order.customer_name or 'Guest',
-                'vendor_items': []  # Cashier doesn't need item details for notification
+                'vendor_items': vendor_items,
+                'time_elapsed': time_elapsed
             }
         })
         logger.info(f"Cashier notification sent for order {order.id}")
