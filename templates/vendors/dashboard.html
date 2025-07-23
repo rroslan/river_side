@@ -1179,7 +1179,7 @@ Vendor Dashboard - River Side Food Court{% endblock %} {% block extra_css %}
                 console.log("Orders after loading:", this.orders);
                 this.updateLastUpdated();
                 setInterval(() => this.updateLastUpdated(), 1000);
-                // this.connectWebSocket(); // Disabled temporarily to fix connection errors
+                this.connectWebSocket();
 
                 // Debug interval to check orders state
                 setInterval(() => {
