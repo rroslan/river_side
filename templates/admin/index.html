@@ -1,0 +1,192 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static "admin/css/dashboard.css" %}">
+<style>
+    .data-reset-section {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+
+    .data-reset-section h2 {
+        color: #dc3545;
+        margin: 0 0 15px 0;
+        font-size: 18px;
+    }
+
+    .reset-link {
+        display: inline-block;
+        background: #dc3545;
+        color: white;
+        text-decoration: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-weight: bold;
+        transition: background-color 0.3s;
+        margin-right: 10px;
+    }
+
+    .reset-link:hover {
+        background: #c82333;
+        color: white;
+        text-decoration: none;
+    }
+
+    .reset-warning {
+        color: #856404;
+        font-size: 14px;
+        margin-top: 10px;
+        font-style: italic;
+    }
+
+    .quick-stats {
+        display: flex;
+        gap: 20px;
+        margin: 15px 0;
+        flex-wrap: wrap;
+    }
+
+    .stat-card {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 15px;
+        min-width: 120px;
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: 24px;
+        font-weight: bold;
+        color: #007cba;
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: #6c757d;
+        text-transform: uppercase;
+    }
+</style>
+{% endblock %}
+
+{% block coltype %}colMS{% endblock %}
+
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+
+{% block nav-breadcrumbs %}{% endblock %}
+
+{% block content %}
+<h1>{% trans 'Site administration' %}</h1>
+
+{% if show_data_reset %}
+<div class="data-reset-section">
+    <h2>🔄 Demo Data Management</h2>
+
+    <div class="quick-stats">
+        <div class="stat-card">
+            <div class="stat-number" id="orders-today">{{ orders_today|default:"0" }}</div>
+            <div class="stat-label">Orders Today</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="unpaid-orders">{{ unpaid_orders|default:"0" }}</div>
+            <div class="stat-label">Unpaid Orders</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="active-tables">{{ active_tables|default:"0" }}</div>
+            <div class="stat-label">Active Tables</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="total-orders">{{ total_orders|default:"0" }}</div>
+            <div class="stat-label">Total Orders</div>
+        </div>
+    </div>
+
+    <p></p>Reset all orders and return the system to a clean demonstration state. This is useful for preparing fresh demos or clearing test data.</p>
+
+    <a href="{% url 'admin:data_reset' %}" class="reset-link">
+        🗑️ Reset All Demo Data
+    </a>
+
+    <button onclick="loadQuickStats()" style="background: #007cba; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-left: 10px;">
+        🔄 Refresh Stats
+    </button>
+
+    <div class="reset-warning">
+        ⚠️ Warning: This action will permanently delete all orders and cannot be undone.
+    </div>
+</div>
+{% endif %}
+
+<div id="content-main">
+    {% if app_list %}
+        {% for app in app_list %}
+            <div class="app-{{ app.app_label }} module">
+                <table>
+                    <caption>
+                        <a href="{{ app.app_url }}" class="section" title="{% blocktranslate with name=app.name %}Models in the {{ name }} application{% endblocktranslate %}">{{ app.name }}</a>
+                    </caption>
+                    {% for model in app.models %}
+                        <tr class="model-{{ model.object_name|lower }}">
+                            {% if model.admin_url %}
+                                <th scope="row"><a href="{{ model.admin_url }}">{{ model.name }}</a></th>
+                            {% else %}
+                                <th scope="row">{{ model.name }}</th>
+                            {% endif %}
+
+                            {% if model.add_url %}
+                                <td><a href="{{ model.add_url }}" class="addlink">{% trans 'Add' %}</a></td>
+                            {% else %}
+                                <td>&nbsp;</td>
+                            {% endif %}
+
+                            {% if model.admin_url %}
+                                {% if model.view_only %}
+                                    <td><a href="{{ model.admin_url }}" class="viewlink">{% trans 'View' %}</a></td>
+                                {% else %}
+                                    <td><a href="{{ model.admin_url }}" class="changelink">{% trans 'Change' %}</a></td>
+                                {% endif %}
+                            {% else %}
+                                <td>&nbsp;</td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>{% trans "You don't have permission to view or edit anything." %}</p>
+    {% endif %}
+</div>
+
+<script>
+    // Load quick stats
+    document.addEventListener("DOMContentLoaded", function () {
+        if (typeof loadQuickStats === 'function') {
+            loadQuickStats();
+        }
+    });
+
+    function loadQuickStats() {
+        // Load stats from API for real-time data
+        fetch("/admin/api/stats/")
+            .then((response) => response.json())
+            .then((stats) => {
+                document.getElementById("orders-today").textContent = stats.orders_today;
+                document.getElementById("unpaid-orders").textContent = stats.unpaid_orders;
+                document.getElementById("active-tables").textContent = stats.active_tables;
+                document.getElementById("total-orders").textContent = stats.total_orders;
+            })
+            .catch((error) => {
+                console.error("Error loading stats:", error);
+                // Keep fallback values from server-side rendering
+            });
+    }
+
+    // Auto-refresh stats every 30 seconds
+    setInterval(loadQuickStats, 30000);
+</script>
+
+{% endblock %}

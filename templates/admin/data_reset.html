@@ -1,0 +1,244 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Reset Demo Data - {{ site_title|default:"Django site admin" }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .reset-container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+
+    .warning-box {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 20px 0;
+    }
+
+    .warning-box h3 {
+        margin: 0 0 10px 0;
+        color: #856404;
+    }
+
+    .reset-button {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        margin: 10px 5px;
+        transition: background-color 0.3s;
+    }
+
+    .reset-button:hover {
+        background: #c82333;
+    }
+
+    .reset-button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+    }
+
+    .cancel-button {
+        background: #6c757d;
+        color: white;
+        text-decoration: none;
+        padding: 12px 24px;
+        border-radius: 5px;
+        font-size: 16px;
+        margin: 10px 5px;
+        display: inline-block;
+        transition: background-color 0.3s;
+    }
+
+    .cancel-button:hover {
+        background: #5a6268;
+        text-decoration: none;
+        color: white;
+    }
+
+    .output-container {
+        background: #000;
+        color: #00ff00;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+        max-height: 400px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        display: none;
+        margin: 20px 0;
+    }
+
+    .status-indicator {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 3px;
+        font-size: 14px;
+        margin: 10px 0;
+    }
+
+    .status-ready {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .status-running {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+    }
+
+    .status-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .status-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+    .spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #007cba;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 10px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reset-container">
+    <h1>🔄 Reset Demo Data</h1>
+
+    <div class="warning-box">
+        <h3>⚠️ WARNING</h3>
+        <p><strong>This action will permanently delete ALL orders and reset the system to a clean state!</strong></p>
+        <ul>
+            <li>All existing orders will be deleted</li>
+            <li>Order history will be lost</li>
+            <li>System will be reset to initial demonstration state</li>
+            <li>This action cannot be undone</li>
+        </ul>
+    </div>
+
+    <div class="status-container">
+        <div id="status-indicator" class="status-indicator status-ready">
+            🎯 System ready for data reset
+        </div>
+    </div>
+
+    <div class="button-container">
+        <button id="reset-button" class="reset-button" onclick="confirmReset()">
+            🗑️ Reset All Demo Data
+        </button>
+        <a href="{% url 'admin:index' %}" class="cancel-button">
+            ↩️ Cancel & Return to Admin
+        </a>
+    </div>
+
+    <div id="output-container" class="output-container">
+        <div id="command-output"></div>
+    </div>
+</div>
+
+<script>
+function confirmReset() {
+    if (confirm('Are you absolutely sure you want to reset all demo data?\n\nThis will delete ALL orders and cannot be undone!')) {
+        executeReset();
+    }
+}
+
+function executeReset() {
+    const button = document.getElementById('reset-button');
+    const statusIndicator = document.getElementById('status-indicator');
+    const outputContainer = document.getElementById('output-container');
+    const commandOutput = document.getElementById('command-output');
+
+    // Update UI
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner"></span>Resetting data...';
+    statusIndicator.className = 'status-indicator status-running';
+    statusIndicator.innerHTML = '<span class="spinner"></span>Executing data reset...';
+    outputContainer.style.display = 'block';
+    commandOutput.innerHTML = 'Starting data reset...\n';
+
+    // Make AJAX request
+    fetch('{% url "admin:data_reset" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusIndicator.className = 'status-indicator status-success';
+            statusIndicator.innerHTML = '✅ Data reset completed successfully!';
+            commandOutput.innerHTML += data.output;
+
+            setTimeout(() => {
+                if (confirm('Data reset completed successfully!\n\nWould you like to return to the admin dashboard?')) {
+                    window.location.href = '{% url "admin:index" %}';
+                }
+            }, 2000);
+        } else {
+            statusIndicator.className = 'status-indicator status-error';
+            statusIndicator.innerHTML = '❌ Error during data reset';
+            commandOutput.innerHTML += 'ERROR: ' + data.message + '\n' + data.output;
+        }
+    })
+    .catch(error => {
+        statusIndicator.className = 'status-indicator status-error';
+        statusIndicator.innerHTML = '❌ Network error during reset';
+        commandOutput.innerHTML += 'NETWORK ERROR: ' + error.message + '\n';
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = '🔄 Reset Again';
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

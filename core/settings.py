@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "django_tailwind_cli",
     'django_htmx',
     'channels',
+    'core',
     'orders',
     'vendors',
 ]

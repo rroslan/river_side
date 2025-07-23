@@ -4,7 +4,19 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.contrib import messages
 from django.http import HttpResponseRedirect
+from django.core.management import call_command
 from .models import Order, OrderItem, OrderStatusHistory, Cart, CartItem
+
+def reset_demo_data_action(modeladmin, request, queryset):
+    """Admin action to reset demo data"""
+    try:
+        call_command('reset_demo_data', '--force')
+        messages.success(request, '🎉 Demo data has been reset successfully!')
+    except Exception as e:
+        messages.error(request, f'❌ Error during reset: {str(e)}')
+
+reset_demo_data_action.short_description = "🔄 Reset All Demo Data"
+
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
@@ -14,7 +26,7 @@ class OrderAdmin(admin.ModelAdmin):
     readonly_fields = ('id', 'created_at', 'updated_at', 'total_amount')
     list_editable = ()
     ordering = ('-created_at',)
-    actions = ['cashier_dashboard_redirect']
+    actions = ['cashier_dashboard_redirect', reset_demo_data_action]
 
     fieldsets = (
         ('Order Information', {

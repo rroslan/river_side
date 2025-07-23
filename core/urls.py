@@ -19,8 +19,11 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+# Import custom admin configuration
+from core import admin as custom_admin
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin/', custom_admin.admin.site.urls),
     path('', include('orders.urls')),
     path('vendors/', include('vendors.urls')),
 ]
