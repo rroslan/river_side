@@ -480,6 +480,78 @@ Reports can be exported in multiple formats:
 - XSS protection
 - Secure session management
 
+## 🔧 Setting Up Cashier Permissions
+
+### Initial Setup (Required)
+
+Before creating any cashier users, you MUST set up the proper permissions:
+
+```bash
+# Navigate to your project directory
+cd river_side
+
+# Set up cashier group and permissions
+python manage.py setup_cashier_permissions
+```
+
+This command will:
+- Create the "Cashier" group if it doesn't exist
+- Assign all required permissions
+- Verify permissions are correctly set
+- Show a summary of what cashiers can do
+
+### Creating New Cashier Users
+
+#### Method 1: Create User and Add to Group (Recommended)
+```bash
+# Create new user with all details
+python manage.py add_cashier john_doe --create \
+    --email "john@restaurant.com" \
+    --first-name "John" \
+    --last-name "Doe"
+
+# You'll be prompted for password
+```
+
+#### Method 2: Add Existing User to Cashier Group
+```bash
+# Add existing user to cashier group
+python manage.py add_cashier existing_username
+```
+
+### Permission Verification
+
+Check if permissions are properly set:
+
+```bash
+# List all cashier users and their status
+python manage.py setup_cashier_permissions --list-users
+
+# Reset permissions if needed
+python manage.py setup_cashier_permissions --reset
+```
+
+### Programmatic Permission Check
+
+You can also check permissions programmatically:
+
+```python
+from core.permissions import CashierPermissions
+
+# Check if user is a cashier
+user = User.objects.get(username='cashier_username')
+is_cashier = CashierPermissions.is_cashier(user)
+
+# Get detailed permission status
+status = CashierPermissions.check_cashier_permissions(user)
+print(f"Has all permissions: {status['has_all_permissions']}")
+print(f"Missing permissions: {status['missing_permissions']}")
+
+# Add user to cashier group
+result = CashierPermissions.add_user_to_cashier_group(user)
+print(result['message'])
+```
+
 ---
 
 ## 🔧 Troubleshooting
@@ -774,9 +846,67 @@ GET /cashier/order/{order_id}/
 
 ### Command Reference
 
+#### Core Permission Setup
 ```bash
-# Create new cashier
-python manage.py create_cashier username
+# Set up cashier permissions (REQUIRED - run this first)
+python manage.py setup_cashier_permissions
+
+# Reset permissions if issues occur
+python manage.py setup_cashier_permissions --reset
+
+# List all cashier users and their status
+python manage.py setup_cashier_permissions --list-users
+```
+
+#### User Management Commands
+```bash
+# Create new cashier user with prompts
+python manage.py add_cashier username --create
+
+# Create cashier with all details at once
+python manage.py add_cashier john_doe --create \
+    --email "john@restaurant.com" \
+    --first-name "John" \
+    --last-name "Doe"
+
+# Add existing user to cashier group
+python manage.py add_cashier existing_username
+```
+
+#### Advanced User Management
+```bash
+# List all cashier users
+python manage.py manage_cashier_users list
+
+# List with detailed permission info
+python manage.py manage_cashier_users list --detailed
+
+# Add user to cashier group
+python manage.py manage_cashier_users add username
+
+# Remove user from cashier group
+python manage.py manage_cashier_users remove username
+
+# Check specific user permissions
+python manage.py manage_cashier_users check username
+
+# Audit all cashier users for issues
+python manage.py manage_cashier_users audit
+
+# Audit and automatically fix issues
+python manage.py manage_cashier_users audit --fix-issues
+
+# Backup cashier user list
+python manage.py manage_cashier_users backup
+
+# Restore from backup
+python manage.py manage_cashier_users restore cashier_backup.txt
+```
+
+#### System Maintenance
+```bash
+# Validate entire permissions system
+python validate_cashier_permissions.py
 
 # Reset demo data (testing)
 python manage.py reset_demo_data --force
@@ -810,16 +940,50 @@ python manage.py shell
 
 After reading this guide, you should be able to:
 
-- [ ] Create new cashier users
-- [ ] Access the cashier dashboard
-- [ ] Process customer payments
-- [ ] Reset tables when needed
-- [ ] Generate sales reports
-- [ ] Understand permission levels
-- [ ] Troubleshoot common issues
-- [ ] Use the API endpoints
-- [ ] Follow best practices
-- [ ] Train other cashiers
+### Initial Setup
+- [ ] Set up cashier permissions: `python manage.py setup_cashier_permissions`
+- [ ] Create new cashier users: `python manage.py add_cashier username --create`
+- [ ] Verify permissions are working: `python validate_cashier_permissions.py`
+- [ ] Test login and dashboard access
+
+### Daily Operations
+- [ ] Access the cashier dashboard at `/cashier/`
+- [ ] Process customer payments and mark orders as paid
+- [ ] Reset tables when needed using the reset function
+- [ ] Generate and review sales reports
+- [ ] Handle common troubleshooting issues
+- [ ] Use filter options to find specific orders
+
+### User Management
+- [ ] List all cashier users: `python manage.py manage_cashier_users list`
+- [ ] Add new users to cashier group: `python manage.py manage_cashier_users add username`
+- [ ] Remove users when needed: `python manage.py manage_cashier_users remove username`
+- [ ] Check individual user permissions: `python manage.py manage_cashier_users check username`
+- [ ] Audit all users regularly: `python manage.py manage_cashier_users audit`
+
+### System Administration
+- [ ] Understand permission levels and security model
+- [ ] Use management commands effectively for maintenance
+- [ ] Troubleshoot permission issues using built-in tools
+- [ ] Monitor cashier activity through audit logs
+- [ ] Backup and restore user configurations
+- [ ] Validate system integrity regularly
+
+### Security & Compliance
+- [ ] Understand what cashiers can and cannot do
+- [ ] Know how to check user permissions programmatically
+- [ ] Follow proper security procedures for user management
+- [ ] Maintain audit trail compliance for all transactions
+- [ ] Monitor for unauthorized access attempts
+- [ ] Keep permissions up to date with system changes
+
+### Best Practices
+- [ ] Train new cashiers on system procedures
+- [ ] Document any custom workflows or policies
+- [ ] Regular permission audits and cleanup
+- [ ] Test backup and restore procedures
+- [ ] Keep management commands reference handy
+- [ ] Monitor system performance and user feedback
 
 **🎯 You're now ready to efficiently manage the River Side Food Court cashier system!**
 

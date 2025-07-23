@@ -245,7 +245,7 @@ GET  /debug/clear-cart/{table_number}/   # Clear cart for testing
 ```
 /ws/orders/table/{table_number}/     # Customer order updates (WORKING)
 /ws/orders/vendor/{vendor_id}/       # Vendor order notifications (WORKING)
-/ws/orders/kitchen/                  # Kitchen display updates (WORKING)
+/ws/orders/cashier/                  # Cashier dashboard updates (WORKING)
 ```
 
 ## 🔧 Configuration

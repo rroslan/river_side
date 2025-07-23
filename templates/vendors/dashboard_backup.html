@@ -166,20 +166,6 @@ Vendor Dashboard - River Side Food Court{% endblock %} {% block extra_css %}
                             class="font-mono bg-base-300 px-1 rounded"
                         ></span>
                     </div>
-                    <div>
-                        Alpine.js Test:
-                        <span
-                            x-text="'Working!'"
-                            class="font-mono bg-success/20 px-1 rounded text-success"
-                        ></span>
-                    </div>
-                    <div>
-                        Current Time:
-                        <span
-                            x-text="new Date().toLocaleTimeString()"
-                            class="font-mono bg-base-300 px-1 rounded"
-                        ></span>
-                    </div>
                 </div>
             </div>
         </div>
@@ -1179,7 +1165,7 @@ Vendor Dashboard - River Side Food Court{% endblock %} {% block extra_css %}
                 console.log("Orders after loading:", this.orders);
                 this.updateLastUpdated();
                 setInterval(() => this.updateLastUpdated(), 1000);
-                // this.connectWebSocket(); // Disabled temporarily to fix connection errors
+                this.connectWebSocket();
 
                 // Debug interval to check orders state
                 setInterval(() => {

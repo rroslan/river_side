@@ -49,6 +49,38 @@
         flex-wrap: wrap;
     }
 
+    .cashier-management-section {
+        background: #e8f4fd;
+        border: 1px solid #bee5eb;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+
+    .cashier-management-section h2 {
+        color: #007cba;
+        margin: 0 0 15px 0;
+        font-size: 18px;
+    }
+
+    .cashier-link {
+        display: inline-block;
+        background: #007cba;
+        color: white;
+        text-decoration: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-weight: bold;
+        transition: background-color 0.3s;
+        margin-right: 10px;
+    }
+
+    .cashier-link:hover {
+        background: #005a87;
+        color: white;
+        text-decoration: none;
+    }
+
     .stat-card {
         background: white;
         border: 1px solid #dee2e6;
@@ -116,6 +148,45 @@
 
     <div class="reset-warning">
         ⚠️ Warning: This action will permanently delete all orders and cannot be undone.
+    </div>
+</div>
+{% endif %}
+
+{% if show_cashier_management %}
+<div class="cashier-management-section">
+    <h2>🔐 Cashier Management</h2>
+
+    <div class="quick-stats">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_cashiers|default:"0" }}</div>
+            <div class="stat-label">Total Cashiers</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ orders_today|default:"0" }}</div>
+            <div class="stat-label">Orders Today</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ unpaid_orders|default:"0" }}</div>
+            <div class="stat-label">Unpaid Orders</div>
+        </div>
+    </div>
+
+    <p>Manage</p> cashier users, permissions, and access controls. Create new cashiers or modify existing ones.</p>
+
+    <a href="{% url 'admin:cashier_management' %}" class="cashier-link">
+        👥 Manage Cashiers
+    </a>
+
+    <a href="{% url 'admin:auth_user_add' %}" class="cashier-link">
+        ➕ Create New User
+    </a>
+
+    <a href="/cashier/login/" target="_blank" class="cashier-link">
+        🚪 Cashier Login
+    </a>
+
+    <div style="font-size: 12px; color: #6c757d; margin-top: 10px;">
+        💡 Tip: Use the Cashier Management page to set up permissions and create cashier accounts.
     </div>
 </div>
 {% endif %}

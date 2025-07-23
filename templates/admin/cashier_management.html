@@ -1,0 +1,290 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | {{ site_title|default:"Django site admin" }}{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .cashier-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .cashier-card.has-issues {
+        border-left: 4px solid #dc3545;
+    }
+    .cashier-card.no-issues {
+        border-left: 4px solid #28a745;
+    }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .stat-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 16px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .stat-number {
+        font-size: 2em;
+        font-weight: bold;
+        color: #007cba;
+    }
+    .action-button {
+        background: #007cba;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 8px;
+        margin-bottom: 8px;
+    }
+    .action-button:hover {
+        background: #005a87;
+    }
+    .action-button.danger {
+        background: #dc3545;
+    }
+    .action-button.danger:hover {
+        background: #c82333;
+    }
+    .permission-list {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 8px;
+    }
+    .permission-item {
+        display: inline-block;
+        margin-right: 12px;
+        margin-bottom: 4px;
+    }
+    .quick-actions {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 24px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="module">
+    <h1>🔐 Cashier Management</h1>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <h3>Quick Actions</h3>
+        <form method="post" style="display: inline;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="setup_permissions">
+            <button type="submit" class="action-button">
+                🔧 Setup/Reset Permissions
+            </button>
+        </form>
+
+        <form method="post" style="display: inline;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="audit_users">
+            <button type="submit" class="action-button">
+                🔍 Audit & Fix Issues
+            </button>
+        </form>
+
+        <a href="{% url 'admin:quick_cashier_creation' %}" class="action-button">
+            ⚡ Quick Create Cashier
+        </a>
+
+        <a href="{% url 'admin:auth_user_add' %}" class="action-button">
+            ➕ Create New User
+        </a>
+
+        <a href="{% url 'admin:auth_user_changelist' %}" class="action-button">
+            👥 Manage All Users
+        </a>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_cashiers }}</div>
+            <div>Total Cashiers</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ users_with_issues }}</div>
+            <div>Users with Issues</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ cashier_users|length }}</div>
+            <div>Active Users</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">
+                {% if cashier_group %}✅{% else %}❌{% endif %}
+            </div>
+            <div>Cashier Group</div>
+        </div>
+    </div>
+
+    <!-- Group Status -->
+    {% if not cashier_group %}
+    <div class="module">
+        <div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+            <strong></strong>⚠️ Warning:</strong> Cashier group does not exist!
+            <a href="#" onclick="document.querySelector('input[value=setup_permissions]').closest('form').submit();" style="color: #721c24; text-decoration: underline;">
+                Click here to set it up.
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Cashier Users List -->
+    <div class="module">
+        <h2>Cashier Users ({{ cashier_users|length }})</h2>
+
+        {% if cashier_users %}
+            {% for cashier_data in cashier_users %}
+            <div class="cashier-card {% if cashier_data.has_issues %}has-issues{% else %}no-issues{% endif %}">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0 0 8px 0;">
+                            {% if cashier_data.user.is_active %}🟢{% else %}🔴{% endif %}
+                            <a href="{% url 'admin:auth_user_change' cashier_data.user.pk %}">
+                                {{ cashier_data.user.username }}
+                            </a>
+                            {% if cashier_data.user.is_superuser %}
+                                <span style="background: #007cba; color: white; font-size: 0.8em; padding: 2px 6px; border-radius: 3px;">ADMIN</span>
+                            {% endif %}
+                        </h3>
+
+                        <div style="margin-bottom: 8px;">
+                            <strong>Name:</strong> {{ cashier_data.user.get_full_name|default:"Not set" }}
+                            <br>
+                            <strong>Email:</strong> {{ cashier_data.user.email|default:"Not set" }}
+                            <br>
+                            <strong>Last Login:</strong>
+                            {% if cashier_data.user.last_login %}
+                                {{ cashier_data.user.last_login|date:"Y-m-d H:i" }}
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </div>
+
+                        <!-- Permission Status -->
+                        <div style="margin-bottom: 8px;">
+                            <strong>Permissions:</strong>
+                            {% if cashier_data.status.has_all_permissions %}
+                                <span style="color: #28a745;">✅ Complete ({{ cashier_data.status.total_permissions }}/19)</span>
+                            {% else %}
+                                <span style="color: #dc3545;">❌ Missing {{ cashier_data.status.missing_permissions|length }} permissions</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Security Issues -->
+                        {% if cashier_data.status.forbidden_permissions_held %}
+                        <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 8px; border-radius: 4px; margin-top: 8px;">
+                            <strong style="color: #856404;">⚠️ Security Warning:</strong>
+                            User has {{ cashier_data.status.forbidden_permissions_held|length }} forbidden permissions
+                        </div>
+                        {% endif %}
+
+                        <!-- Missing Permissions -->
+                        {% if cashier_data.status.missing_permissions %}
+                        <div class="permission-list">
+                            <strong>Missing:</strong>
+                            {% for perm in cashier_data.status.missing_permissions %}
+                                <span class="permission-item" style="color: #dc3545;">❌ {{ perm }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div style="text-align: right;">
+                        <a href="{% url 'admin:auth_user_change' cashier_data.user.pk %}" class="action-button">
+                            ✏️ Edit User
+                        </a>
+                        {% if not cashier_data.user.is_superuser %}
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="remove_from_group">
+                            <input type="hidden" name="user_id" value="{{ cashier_data.user.pk }}">
+                            <button type="submit" class="action-button danger"
+                                    onclick="return confirm('Remove {{ cashier_data.user.username }} from Cashier group?')">
+                                ➖ Remove Access
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align: center; padding: 40px; color: #666;">
+                <h3>No cashier users found</h3>
+                <p>Create your first cashier user to get started.</p>
+                <a href="{% url 'admin:quick_cashier_creation' %}" class="action-button">
+                    ⚡ Quick Create Cashier
+                </a>
+                <a href="{% url 'admin:auth_user_add' %}" class="action-button">
+                    ➕ Create New User
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Help Section -->
+    <div class="module">
+        <h2></h2>📚 Help & Documentation</h2>
+        <div style="background: #f8f9fa; padding: 16px; border-radius: 8px;">
+            <h4>How to Create Cashiers:</h4>
+            <ol>
+                <li><strong>Quick Creation:</strong> Click "⚡ Quick Create Cashier" above for streamlined cashier creation</li>
+                <li><strong>Via Admin Panel:</strong> Click "Create New User" above, then check "Add to Cashier group"</li>
+                <li><strong>Via Command Line:</strong> <code>python manage.py add_cashier username --create</code></li>
+                <li><strong>Add Existing User:</strong> Edit any user and add them to the "Cashier" group</li>
+            </ol>
+
+            <h4>Default Credentials for Testing:</h4>
+            <div style="background: white; padding: 12px; border-radius: 4px; margin: 8px 0;">
+                <strong>Username:</strong> test_cashier<br>
+                <strong>Password:</strong> cashier123<br>
+                <strong>Access:</strong> <a href="/cashier/login/" target="_blank">Cashier Login Page</a>
+            </div>
+
+            <h4>Management Commands:</h4>
+            <ul>
+                <li><code>python manage.py setup_cashier_permissions</code> - Set up permissions</li>
+                <li><code>python manage.py manage_cashier_users list --detailed</code> - List all cashiers</li>
+                <li><code>python manage.py manage_cashier_users audit</code> - Check for issues</li>
+                <li><code>python validate_cashier_permissions.py</code> - Full system validation</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh stats every 30 seconds
+setInterval(function() {
+    // You could add AJAX here to refresh stats without page reload
+}, 30000);
+
+// Confirmation for dangerous actions
+document.querySelectorAll('.danger').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+        if (!confirm('Are you sure you want to perform this action?')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

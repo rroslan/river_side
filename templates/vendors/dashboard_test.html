@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ vendor.name }} - Test Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <h1 class="text-3xl font-bold mb-6">{{ vendor.name }} - Test Dashboard</h1>
+
+    <!-- Debug Info -->
+    <div class="alert alert-info mb-6">
+        <h3 class="font-bold">Debug Information</h3>
+        <p>Vendor ID: {{ vendor.id }}</p>
+        <p>Orders Count (from backend): {{ stats.todays_orders }}</p>
+    </div>
+
+    <!-- Alpine.js Test Component -->
+    <div x-data="testDashboard()" x-init="init()">
+        <!-- Alpine Status -->
+        <div class="alert alert-success mb-6">
+            <h3 class="font-bold">Alpine.js Status</h3>
+            <p>Alpine Test: <span x-text="'Working!'" class="font-mono bg-base-300 px-2 rounded"></span></p>
+            <p>Orders Loaded: <span x-text="orders.length" class="font-mono bg-base-300 px-2 rounded"></span></p>
+            <p>Load Status: <span x-text="loadStatus" class="font-mono bg-base-300 px-2 rounded"></span></p>
+        </div>
+
+        <!-- Orders Display -->
+        <div class="space-y-4">
+            <h2 class="text-2xl font-bold">Orders</h2>
+
+            <!-- No Orders Message -->
+            <div x-show="orders.length === 0" class="alert alert-warning">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>No orders found. Check console for errors.</span>
+            </div>
+
+            <!-- Orders List -->
+            <div x-show="orders.length > 0" class="grid gap-4">
+                <template x-for="orderGroup in orders" :key="orderGroup.order.id">
+                    <div class="card bg-base-200 shadow-xl">
+                        <div class="card-body">
+                            <h3 class="card-title">
+                                Table <span x-text="orderGroup.order.table_number"></span>
+                                <div class="badge" :class="{
+                                    'badge-warning': orderGroup.order.status === 'pending',
+                                    'badge-info': orderGroup.order.status === 'confirmed',
+                                    'badge-primary': orderGroup.order.status === 'preparing',
+                                    'badge-success': orderGroup.order.status === 'ready'
+                                }" x-text="orderGroup.order.status.toUpperCase()"></div>
+                            </h3>
+
+                            <div class="divider my-2"></div>
+
+                            <!-- Order Items -->
+                            <div class="space-y-2">
+                                <template x-for="item in orderGroup.items" :key="item.id">
+                                    <div class="flex justify-between">
+                                        <span><span x-text="item.quantity"></span>x <span x-text="item.name"></span></span>
+                                        <span x-show="item.special_instructions" class="text-sm text-base-content/70" x-text="'(' + item.special_instructions + ')'"></span>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <div class="divider my-2"></div>
+
+                            <!-- Order Info -->
+                            <div class="flex justify-between text-sm">
+                                <span>Customer: <span x-text="orderGroup.order.customer_name || 'Guest'"></span></span>
+                                <span class="font-bold">Total: $<span x-text="parseFloat(orderGroup.order.total_amount).toFixed(2)"></span></span>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="card-actions justify-end mt-4">
+                                <button x-show="orderGroup.order.status === 'pending'"
+                                        @click="updateStatus(orderGroup.order.id, 'confirmed')"
+                                        class="btn btn-info btn-sm">
+                                    Accept Order
+                                </button>
+                                <button x-show="orderGroup.order.status === 'confirmed'"
+                                        @click="updateStatus(orderGroup.order.id, 'preparing')"
+                                        class="btn btn-warning btn-sm">
+                                    Start Preparing
+                                </button>
+                                <button x-show="orderGroup.order.status === 'preparing'"
+                                        @click="updateStatus(orderGroup.order.id, 'ready')"
+                                        class="btn btn-success btn-sm">
+                                    Mark Ready
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Orders Data -->
+<script id="orders-data" type="application/json">
+{{ orders|safe }}
+</script>
+
+<!-- Alpine Component -->
+<script>
+function testDashboard() {
+    return {
+        orders: [],
+        loadStatus: 'Not started',
+
+        init() {
+            console.log('Test Dashboard: Initializing...');
+            this.loadStatus = 'Initializing...';
+            this.loadOrders();
+        },
+
+        loadOrders() {
+            console.log('Test Dashboard: Loading orders...');
+            this.loadStatus = 'Loading...';
+
+            const ordersElement = document.getElementById('orders-data');
+            if (!ordersElement) {
+                console.error('Test Dashboard: orders-data element not found!');
+                this.loadStatus = 'Error: orders-data element not found';
+                return;
+            }
+
+            try {
+                const jsonText = ordersElement.textContent.trim();
+                console.log('Test Dashboard: Raw JSON length:', jsonText.length);
+                console.log('Test Dashboard: First 200 chars:', jsonText.substring(0, 200));
+
+                this.orders = JSON.parse(jsonText);
+                console.log('Test Dashboard: Parsed orders:', this.orders);
+                console.log('Test Dashboard: Orders count:', this.orders.length);
+
+                if (Array.isArray(this.orders)) {
+                    this.loadStatus = `Loaded ${this.orders.length} orders successfully`;
+                } else {
+                    console.error('Test Dashboard: Orders is not an array:', typeof this.orders);
+                    this.loadStatus = 'Error: Orders is not an array';
+                }
+            } catch (error) {
+                console.error('Test Dashboard: Error parsing orders:', error);
+                this.loadStatus = 'Error: ' + error.message;
+                this.orders = [];
+            }
+        },
+
+        async updateStatus(orderId, newStatus) {
+            console.log('Test Dashboard: Updating order', orderId, 'to', newStatus);
+
+            try {
+                const response = await fetch(`/vendors/order/${orderId}/status/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCsrfToken()
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Test Dashboard: Update successful:', result);
+
+                    // Update local state
+                    const orderIndex = this.orders.findIndex(o => o.order.id === orderId);
+                    if (orderIndex !== -1) {
+                        this.orders[orderIndex].order.status = newStatus;
+                    }
+                } else {
+                    console.error('Test Dashboard: Update failed:', response.status);
+                }
+            } catch (error) {
+                console.error('Test Dashboard: Error updating status:', error);
+            }
+        },
+
+        getCsrfToken() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'csrftoken') {
+                    return value;
+                }
+            }
+            return '';
+        }
+    }
+}
+
+// Debug: Check Alpine.js availability
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Test Dashboard: DOM loaded');
+    console.log('Test Dashboard: Alpine available:', typeof Alpine !== 'undefined');
+
+    // Additional debug after a delay
+    setTimeout(() => {
+        console.log('Test Dashboard: Checking Alpine after delay...');
+        console.log('Test Dashboard: Alpine available:', typeof Alpine !== 'undefined');
+
+        const alpineComponent = document.querySelector('[x-data="testDashboard()"]');
+        console.log('Test Dashboard: Alpine component found:', alpineComponent !== null);
+
+        if (alpineComponent && alpineComponent._x_dataStack) {
+            console.log('Test Dashboard: Alpine data:', alpineComponent._x_dataStack[0]);
+        }
+    }, 1000);
+});
+</script>
+{% endblock %}

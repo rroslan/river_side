@@ -2,22 +2,50 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
 from django.contrib import messages
 from django.db.models import Q, Count
 from django.utils import timezone
 from .models import Vendor, MenuItem, Category
 from orders.models import Order, OrderItem, OrderStatus
 import json
+from django.core.serializers.json import DjangoJSONEncoder
+
+@login_required
+def vendor_redirect(request):
+    """Redirect vendors directly to their own vendor dashboard after login"""
+    # Get the vendor owned by this user
+    try:
+        vendor = Vendor.objects.get(owner=request.user)
+        return redirect('vendors:vendor_dashboard', vendor_id=vendor.id)
+    except Vendor.DoesNotExist:
+        messages.error(request, 'No vendor account found for this user.')
+        return redirect('login')
+    except Vendor.MultipleObjectsReturned:
+        # If multiple vendors, go to vendor list to choose
+        return redirect('vendors:vendor_list')
+
+def vendor_logout(request):
+    """Custom logout view for vendors"""
+    logout(request)
+    messages.success(request, 'You have been successfully logged out.')
+    return redirect('login')
 
 @login_required
 def vendor_dashboard(request, vendor_id):
     """Vendor dashboard with real-time orders"""
     vendor = get_object_or_404(Vendor, id=vendor_id)
 
+    # Log which template will be used
+    import logging
+    logger = logging.getLogger(__name__)
+
+
+
     # Check if user has permission
     if vendor.owner != request.user and not request.user.is_staff:
         messages.error(request, 'You do not have permission to access this vendor dashboard')
-        return redirect('vendor_list')
+        return redirect('login')
 
     # Get current orders for this vendor (including delivered orders for payment tracking)
     current_orders = OrderItem.objects.filter(
@@ -126,20 +154,34 @@ def vendor_dashboard(request, vendor_id):
 
     context = {
         'vendor': vendor,
-        'orders': orders,
+        'orders': json.dumps(orders, cls=DjangoJSONEncoder),
         'paid_orders': paid_orders_list,
         'stats': stats
     }
 
-    return render(request, 'vendors/dashboard.html', context)
+    # Use test template if requested, organized template by default
+    if request.GET.get('test'):
+        template = 'vendors/dashboard_test.html'
+    elif request.GET.get('old'):
+        template = 'vendors/dashboard.html'
+    else:
+        template = 'vendors/dashboard_organized.html'
+
+    logger.info(f"Vendor dashboard: Using template {template} for vendor {vendor_id}")
+    logger.info(f"Request path: {request.get_full_path()}")
+
+    return render(request, template, context)
 
 @login_required
 def vendor_list(request):
-    """List all vendors for the user"""
+    """List vendors for the user (mainly for admin/staff users)"""
     if request.user.is_staff:
         vendors = Vendor.objects.all()
     else:
         vendors = Vendor.objects.filter(owner=request.user)
+        # If user has only one vendor, redirect directly to it
+        if vendors.count() == 1:
+            return redirect('vendors:vendor_dashboard', vendor_id=vendors.first().id)
 
     return render(request, 'vendors/vendor_list.html', {'vendors': vendors})
 
@@ -192,13 +234,14 @@ def update_order_status(request, vendor_id):
 
 @login_required
 def vendor_payment_report(request, vendor_id):
-    """API endpoint for vendor payment analytics"""
+    """Vendor payment report page"""
     try:
         vendor = get_object_or_404(Vendor, id=vendor_id)
 
         # Check permission
         if vendor.owner != request.user and not request.user.is_staff:
-            return JsonResponse({'error': 'Permission denied'}, status=403)
+            messages.error(request, 'You do not have permission to view this report')
+            return redirect('vendors:vendor_dashboard', vendor_id=vendor_id)
 
         # Get date range from request
         from datetime import datetime, timedelta
@@ -303,7 +346,24 @@ def vendor_payment_report(request, vendor_id):
             ]
         }
 
-        return JsonResponse(report_data)
+        # Calculate max daily revenue for chart scaling
+        max_daily_revenue = max(daily_revenue.values()) if daily_revenue else 0
+
+        context = {
+            'vendor': vendor,
+            'date_range': {
+                'start': start_date.isoformat(),
+                'end': end_date.isoformat()
+            },
+            'summary': report_data['summary'],
+            'daily_revenue': sorted(daily_revenue.items()),
+            'max_daily_revenue': max_daily_revenue,
+            'payment_methods': payment_methods,
+            'top_items': report_data['top_items'],
+            'unpaid_orders_detail': report_data['unpaid_orders_detail']
+        }
+
+        return render(request, 'vendors/payment_report.html', context)
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -316,7 +376,7 @@ def menu_management(request, vendor_id):
     # Check permission
     if vendor.owner != request.user and not request.user.is_staff:
         messages.error(request, 'You do not have permission to manage this vendor')
-        return redirect('vendor_list')
+        return redirect('login')
 
     categories = Category.objects.filter(vendor=vendor).prefetch_related('menu_items')
 
@@ -355,33 +415,53 @@ def toggle_menu_item(request, vendor_id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-def kitchen_display(request):
-    """Kitchen display system showing all orders"""
-    # Get all active orders
-    orders = Order.objects.filter(
-        status__in=['pending', 'confirmed', 'preparing']
-    ).order_by('created_at')
+@login_required
+def debug_dashboard(request, vendor_id):
+    """Debug version of vendor dashboard to isolate issues"""
+    vendor = get_object_or_404(Vendor, id=vendor_id)
 
-    # Group by vendor for better organization
-    orders_by_vendor = {}
-    for order in orders:
-        for item in order.items.all():
-            vendor_name = item.vendor.name
-            if vendor_name not in orders_by_vendor:
-                orders_by_vendor[vendor_name] = []
+    # Check if user has permission
+    if vendor.owner != request.user and not request.user.is_staff:
+        messages.error(request, 'You do not have permission to access this vendor dashboard')
+        return redirect('login')
 
-            # Check if order already added for this vendor
-            order_exists = any(o['order'].id == order.id for o in orders_by_vendor[vendor_name])
-            if not order_exists:
-                vendor_items = [i for i in order.items.all() if i.vendor.name == vendor_name]
-                orders_by_vendor[vendor_name].append({
-                    'order': order,
-                    'items': vendor_items
-                })
+    # Get current orders for this vendor (same logic as main dashboard)
+    current_orders = OrderItem.objects.filter(
+        menu_item__category__vendor=vendor,
+        order__status__in=['pending', 'confirmed', 'preparing', 'ready', 'delivered']
+    ).select_related('order', 'menu_item').order_by('-order__created_at')
+
+    # Group orders by order ID and serialize data
+    orders_dict = {}
+    for item in current_orders:
+        order_id = item.order.id
+        if order_id not in orders_dict:
+            orders_dict[order_id] = {
+                'order': {
+                    'id': str(item.order.id),
+                    'table_number': item.order.table.number,
+                    'status': item.order.status,
+                    'total_amount': str(item.order.total_amount),
+                    'customer_name': item.order.customer_name,
+                    'created_at': item.order.created_at.isoformat(),
+                    'notes': item.order.notes
+                },
+                'items': []
+            }
+
+        orders_dict[order_id]['items'].append({
+            'id': item.id,
+            'name': item.menu_item.name,
+            'quantity': item.quantity,
+            'special_instructions': item.special_instructions,
+            'preparation_time': item.menu_item.preparation_time
+        })
+
+    orders = list(orders_dict.values())
 
     context = {
-        'orders_by_vendor': orders_by_vendor,
-        'total_orders': orders.count()
+        'vendor': vendor,
+        'orders': json.dumps(orders, cls=DjangoJSONEncoder),
     }
 
-    return render(request, 'vendors/kitchen_display.html', context)
+    return render(request, 'vendors/debug_dashboard.html', context)

@@ -130,6 +130,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.csrf',
                 'core.context_processors.categories',
                 'core.context_processors.site_info',
                 'core.context_processors.cart_info',
@@ -242,7 +243,7 @@ CSRF_COOKIE_SAMESITE = 'Lax'
 # Login/Logout redirect settings
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/accounts/redirect/'
-LOGOUT_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 # Security settings for production
 if not DEBUG:

@@ -6,11 +6,11 @@ app_name = 'vendors'
 urlpatterns = [
     # Vendor management URLs
     path('', views.vendor_list, name='vendor_list'),
+    path('redirect/', views.vendor_redirect, name='vendor_redirect'),
+    path('logout/', views.vendor_logout, name='vendor_logout'),
     path('<int:vendor_id>/dashboard/', views.vendor_dashboard, name='vendor_dashboard'),
+    path('<int:vendor_id>/debug/', views.debug_dashboard, name='debug_dashboard'),
     path('<int:vendor_id>/menu/', views.menu_management, name='menu_management'),
-
-    # Kitchen display
-    path('kitchen/', views.kitchen_display, name='kitchen_display'),
 
     # AJAX endpoints for vendor operations
     path('<int:vendor_id>/api/update-order-status/', views.update_order_status, name='update_order_status'),

@@ -93,11 +93,7 @@ def send_new_order_notification(order):
     except Exception as e:
         logger.error(f"Error notifying vendors: {e}")
 
-    # Notify kitchen display
-    async_to_sync(channel_layer.group_send)('kitchen_display', {
-        'type': 'new_order_kitchen',
-        'order': order_data
-    })
+
 
     logger.info(f"New order notification sent for order {order.id}")
 
@@ -128,11 +124,7 @@ def send_order_update_notification(order):
     except Exception as e:
         logger.error(f"Error notifying vendors: {e}")
 
-    # Notify kitchen display
-    async_to_sync(channel_layer.group_send)('kitchen_display', {
-        'type': 'order_update_kitchen',
-        'order': order_data
-    })
+
 
     logger.info(f"Order update notification sent for order {order.id}")
 

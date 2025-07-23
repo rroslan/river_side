@@ -1,0 +1,645 @@
+{% extends 'base.html' %} {% block title %}{{ vendor.name }} - Dashboard{%
+endblock %} {% block extra_css %}
+<style>
+    .order-card {
+        transition:
+            transform 0.2s,
+            box-shadow 0.2s;
+        border-left: 4px solid transparent;
+    }
+
+    .order-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .order-pending {
+        border-left-color: #fbbf24;
+    }
+    .order-confirmed {
+        border-left-color: #3b82f6;
+    }
+    .order-preparing {
+        border-left-color: #f59e0b;
+    }
+    .order-ready {
+        border-left-color: #10b981;
+    }
+
+    .status-badge-pending {
+        @apply badge-warning;
+    }
+    .status-badge-confirmed {
+        @apply badge-info;
+    }
+    .status-badge-preparing {
+        @apply badge-warning;
+    }
+    .status-badge-ready {
+        @apply badge-success;
+    }
+</style>
+{% endblock %} {% block content %}
+<div
+    class="min-h-screen bg-base-100 py-6"
+    x-data="vendorDashboard()"
+    x-init="init()"
+>
+    <!-- Header -->
+    <div class="container mx-auto px-4 mb-6">
+        <div
+            class="flex flex-col md:flex-row justify-between items-start md:items-center"
+        >
+            <div>
+                <h1 class="text-3xl font-bold text-base-content">
+                    {{ vendor.name }}
+                </h1>
+                <p class="text-base-content/70 mt-2">Vendor Dashboard</p>
+            </div>
+
+            <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                <!-- Connection Status -->
+                <div class="flex items-center space-x-2">
+                    <div
+                        class="w-3 h-3 rounded-full"
+                        :class="connected ? 'bg-success' : 'bg-error'"
+                    ></div>
+                    <span
+                        class="text-sm"
+                        x-text="connected ? 'Connected' : 'Disconnected'"
+                    ></span>
+                </div>
+
+                <!-- Last Updated -->
+                <div class="text-sm text-base-content/60">
+                    Last updated: <span x-text="lastUpdated"></span>
+                </div>
+
+                <!-- Logout -->
+                <a
+                    href="{% url 'vendors:vendor_logout' %}"
+                    class="btn btn-ghost btn-sm"
+                >
+                    Logout
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Info -->
+    <div class="container mx-auto px-4 mb-6">
+        <div class="alert alert-info">
+            <div>
+                <h3 class="font-bold">🔍 Debug Info</h3>
+                <div class="text-sm space-y-1">
+                    <div>
+                        Total Orders:
+                        <span
+                            x-text="orders.length"
+                            class="font-mono bg-base-300 px-2 py-1 rounded"
+                        ></span>
+                    </div>
+                    <div>
+                        Active Filter:
+                        <span
+                            x-text="activeFilter"
+                            class="font-mono bg-base-300 px-2 py-1 rounded"
+                        ></span>
+                    </div>
+                    <div>
+                        Filtered Orders:
+                        <span
+                            x-text="filteredOrders.length"
+                            class="font-mono bg-base-300 px-2 py-1 rounded"
+                        ></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="container mx-auto px-4 mb-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-base-200 p-4 rounded-lg">
+                <div
+                    class="text-2xl font-bold text-warning"
+                    x-text="ordersByStatus.pending.length"
+                ></div>
+                <div class="text-sm text-base-content/70">Pending</div>
+            </div>
+            <div class="bg-base-200 p-4 rounded-lg">
+                <div
+                    class="text-2xl font-bold text-info"
+                    x-text="ordersByStatus.confirmed.length"
+                ></div>
+                <div class="text-sm text-base-content/70">Confirmed</div>
+            </div>
+            <div class="bg-base-200 p-4 rounded-lg">
+                <div
+                    class="text-2xl font-bold text-warning"
+                    x-text="ordersByStatus.preparing.length"
+                ></div>
+                <div class="text-sm text-base-content/70">Preparing</div>
+            </div>
+            <div class="bg-base-200 p-4 rounded-lg">
+                <div
+                    class="text-2xl font-bold text-success"
+                    x-text="ordersByStatus.ready.length"
+                ></div>
+                <div class="text-sm text-base-content/70">Ready</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4">
+        <!-- Order Filters -->
+        <div class="tabs tabs-boxed bg-base-300 mb-6">
+            <button
+                @click="activeFilter = 'all'"
+                :class="activeFilter === 'all' ? 'tab-active' : ''"
+                class="tab"
+            >
+                All (<span x-text="orders.length"></span>)
+            </button>
+            <button
+                @click="activeFilter = 'pending'"
+                :class="activeFilter === 'pending' ? 'tab-active' : ''"
+                class="tab"
+            >
+                Pending (<span x-text="ordersByStatus.pending.length"></span>)
+            </button>
+            <button
+                @click="activeFilter = 'confirmed'"
+                :class="activeFilter === 'confirmed' ? 'tab-active' : ''"
+                class="tab"
+            >
+                Confirmed (<span x-text="ordersByStatus.confirmed.length"></span
+                >)
+            </button>
+            <button
+                @click="activeFilter = 'preparing'"
+                :class="activeFilter === 'preparing' ? 'tab-active' : ''"
+                class="tab"
+            >
+                Preparing (<span x-text="ordersByStatus.preparing.length"></span
+                >)
+            </button>
+            <button
+                @click="activeFilter = 'ready'"
+                :class="activeFilter === 'ready' ? 'tab-active' : ''"
+                class="tab"
+            >
+                Ready (<span x-text="ordersByStatus.ready.length"></span>)
+            </button>
+        </div>
+
+        <!-- Orders Display -->
+        <div class="space-y-4">
+            <!-- No Orders Message -->
+            <div x-show="filteredOrders.length === 0" class="text-center py-16">
+                <div class="text-6xl mb-4">📋</div>
+                <h3 class="text-2xl font-bold text-base-content mb-2">
+                    No Orders
+                </h3>
+                <p
+                    class="text-base-content/70"
+                    x-text="getNoOrdersMessage()"
+                ></p>
+                <div class="mt-4 text-sm text-base-content/50">
+                    Debug: Total: <span x-text="orders.length"></span>, Filter:
+                    <span x-text="activeFilter"></span>
+                </div>
+            </div>
+
+            <!-- Orders List -->
+            <template
+                x-for="orderGroup in filteredOrders"
+                :key="orderGroup.order.id"
+            >
+                <div
+                    class="order-card bg-base-200 p-6 rounded-lg shadow-sm"
+                    :class="'order-' + orderGroup.order.status"
+                >
+                    <!-- Order Header -->
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold">
+                                Table
+                                <span
+                                    x-text="orderGroup.order.table_number"
+                                ></span>
+                            </h3>
+                            <div class="flex items-center space-x-2 mt-1">
+                                <span
+                                    class="badge badge-sm"
+                                    :class="'status-badge-' + orderGroup.order.status"
+                                    x-text="orderGroup.order.status.toUpperCase()"
+                                ></span>
+                                <span
+                                    x-show="orderGroup.order.customer_name"
+                                    class="text-sm text-base-content/70"
+                                >
+                                    •
+                                    <span
+                                        x-text="orderGroup.order.customer_name"
+                                    ></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-primary">
+                                $<span
+                                    x-text="parseFloat(orderGroup.order.total_amount).toFixed(2)"
+                                ></span>
+                            </div>
+                            <div
+                                class="text-xs text-base-content/60"
+                                x-text="formatTime(orderGroup.order.created_at)"
+                            ></div>
+                        </div>
+                    </div>
+
+                    <!-- Order Items -->
+                    <div class="mb-4">
+                        <h4
+                            class="text-sm font-semibold text-base-content/80 mb-2"
+                        >
+                            Items:
+                        </h4>
+                        <div class="space-y-2">
+                            <template
+                                x-for="item in orderGroup.items"
+                                :key="item.id"
+                            >
+                                <div
+                                    class="bg-base-300 p-3 rounded border-l-2 border-primary"
+                                >
+                                    <div
+                                        class="flex justify-between items-start"
+                                    >
+                                        <div>
+                                            <span class="font-medium">
+                                                <span
+                                                    x-text="item.quantity"
+                                                ></span
+                                                >x
+                                                <span x-text="item.name"></span>
+                                            </span>
+                                            <div
+                                                x-show="item.special_instructions"
+                                                class="text-xs text-warning mt-1 bg-warning/20 p-1 rounded"
+                                            >
+                                                📝
+                                                <span
+                                                    x-text="item.special_instructions"
+                                                ></span>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="text-xs text-primary font-bold"
+                                        >
+                                            <span
+                                                x-text="item.preparation_time"
+                                            ></span
+                                            >min
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Order Actions -->
+                    <div class="flex gap-2">
+                        <button
+                            x-show="orderGroup.order.status === 'pending'"
+                            @click="updateOrderStatus(orderGroup.order.id, 'confirmed')"
+                            class="btn btn-info btn-sm flex-1"
+                        >
+                            ✅ Accept Order
+                        </button>
+
+                        <button
+                            x-show="orderGroup.order.status === 'confirmed'"
+                            @click="updateOrderStatus(orderGroup.order.id, 'preparing')"
+                            class="btn btn-warning btn-sm flex-1"
+                        >
+                            👨‍🍳 Start Preparing
+                        </button>
+
+                        <button
+                            x-show="orderGroup.order.status === 'preparing'"
+                            @click="updateOrderStatus(orderGroup.order.id, 'ready')"
+                            class="btn btn-success btn-sm flex-1"
+                        >
+                            ✅ Mark Ready
+                        </button>
+
+                        <button
+                            x-show="orderGroup.order.status === 'ready'"
+                            @click="updateOrderStatus(orderGroup.order.id, 'delivered')"
+                            class="btn btn-neutral btn-sm flex-1"
+                        >
+                            📦 Mark Delivered
+                        </button>
+
+                        <button
+                            x-show="orderGroup.order.status === 'delivered'"
+                            class="btn btn-success btn-sm flex-1"
+                            disabled
+                        >
+                            ✓ Completed
+                        </button>
+
+                        <!-- Cancel Button -->
+                        <button
+                            x-show="['pending', 'confirmed', 'preparing'].includes(orderGroup.order.status)"
+                            @click="updateOrderStatus(orderGroup.order.id, 'cancelled')"
+                            class="btn btn-error btn-sm px-4"
+                        >
+                            ✕
+                        </button>
+                    </div>
+
+                    <!-- Order Notes -->
+                    <div
+                        x-show="orderGroup.order.notes"
+                        class="mt-3 p-2 bg-base-300 rounded text-sm"
+                    >
+                        <strong>Notes:</strong>
+                        <span x-text="orderGroup.order.notes"></span>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div x-show="showToast" x-transition class="fixed bottom-4 right-4 z-50">
+        <div
+            class="alert"
+            :class="toastType === 'success' ? 'alert-success' : 'alert-error'"
+        >
+            <span x-text="toastMessage"></span>
+        </div>
+    </div>
+</div>
+
+<!-- CSRF Token -->
+<meta name="csrf-token" content="{{ csrf_token }}" />
+
+<!-- JSON Data -->
+<script id="orders-data" type="application/json">
+    {{ orders|safe }}
+</script>
+
+<!-- Alpine.js Dashboard Component -->
+<script>
+    function vendorDashboard() {
+        return {
+            // State
+            orders: [],
+            connected: false,
+            socket: null,
+            activeFilter: "all",
+            lastUpdated: "",
+            showToast: false,
+            toastMessage: "",
+            toastType: "success",
+
+            // Computed
+            get ordersByStatus() {
+                return {
+                    pending: this.orders.filter(
+                        (o) => o.order.status === "pending",
+                    ),
+                    confirmed: this.orders.filter(
+                        (o) => o.order.status === "confirmed",
+                    ),
+                    preparing: this.orders.filter(
+                        (o) => o.order.status === "preparing",
+                    ),
+                    ready: this.orders.filter(
+                        (o) => o.order.status === "ready",
+                    ),
+                    delivered: this.orders.filter(
+                        (o) => o.order.status === "delivered",
+                    ),
+                };
+            },
+
+            get filteredOrders() {
+                console.log(
+                    "Filtering orders with activeFilter:",
+                    this.activeFilter,
+                );
+                if (this.activeFilter === "all") {
+                    console.log("Returning all orders:", this.orders.length);
+                    return this.orders;
+                }
+                const filtered = this.ordersByStatus[this.activeFilter] || [];
+                console.log(
+                    `Filtered ${this.activeFilter} orders:`,
+                    filtered.length,
+                );
+                return filtered;
+            },
+
+            // Methods
+            init() {
+                console.log("Initializing vendor dashboard...");
+                this.loadInitialOrders();
+                console.log("Orders after loading:", this.orders);
+                this.updateLastUpdated();
+                setInterval(() => this.updateLastUpdated(), 1000);
+
+                // Simulate connection
+                setTimeout(() => {
+                    this.connected = true;
+                    console.log("Simulated connection established");
+                }, 1000);
+
+                // Debug interval
+                setInterval(() => {
+                    console.log("Orders check:", {
+                        total: this.orders.length,
+                        pending: this.orders.filter(
+                            (o) => o.order.status === "pending",
+                        ).length,
+                        confirmed: this.orders.filter(
+                            (o) => o.order.status === "confirmed",
+                        ).length,
+                        preparing: this.orders.filter(
+                            (o) => o.order.status === "preparing",
+                        ).length,
+                        ready: this.orders.filter(
+                            (o) => o.order.status === "ready",
+                        ).length,
+                    });
+                }, 5000);
+            },
+
+            loadInitialOrders() {
+                const ordersData = document.getElementById("orders-data");
+                if (ordersData) {
+                    try {
+                        const jsonData = ordersData.textContent.trim();
+                        console.log(
+                            "Raw JSON data:",
+                            jsonData.substring(0, 200) + "...",
+                        );
+                        this.orders = JSON.parse(jsonData);
+                        console.log(
+                            "Parsed orders successfully:",
+                            this.orders.length,
+                            "orders",
+                        );
+                        console.log("First order:", this.orders[0]);
+
+                        // Validate order structure
+                        this.orders.forEach((orderGroup, index) => {
+                            if (!orderGroup.order || !orderGroup.items) {
+                                console.error(
+                                    `Invalid order structure at index ${index}:`,
+                                    orderGroup,
+                                );
+                            }
+                        });
+                    } catch (e) {
+                        console.error("Error parsing orders data:", e);
+                        console.error("Raw data that failed:", jsonData);
+                        this.orders = [];
+                    }
+                } else {
+                    console.warn("No orders-data element found");
+                    this.orders = [];
+                }
+            },
+
+            async updateOrderStatus(orderId, newStatus) {
+                try {
+                    const response = await fetch(
+                        `/vendors/{{ vendor.id }}/api/update-order-status/`,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRFToken": this.getCsrfToken(),
+                            },
+                            body: JSON.stringify({
+                                order_id: orderId,
+                                status: newStatus,
+                            }),
+                        },
+                    );
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Update the order status locally
+                        const orderIndex = this.orders.findIndex(
+                            (o) => o.order.id === orderId,
+                        );
+                        if (orderIndex !== -1) {
+                            this.orders[orderIndex].order.status = newStatus;
+                        }
+
+                        this.showToastMessage(data.message, "success");
+                    } else {
+                        this.showToastMessage(
+                            data.error || "Failed to update order status",
+                            "error",
+                        );
+                    }
+                } catch (error) {
+                    console.error("Error updating order status:", error);
+                    this.showToastMessage(
+                        "Failed to update order status",
+                        "error",
+                    );
+                }
+            },
+
+            formatTime(timestamp) {
+                return new Date(timestamp).toLocaleTimeString();
+            },
+
+            updateLastUpdated() {
+                this.lastUpdated = new Date().toLocaleTimeString();
+            },
+
+            getNoOrdersMessage() {
+                if (this.activeFilter === "all") {
+                    return "No orders at the moment. New orders will appear here automatically.";
+                }
+                return `No ${this.activeFilter} orders at the moment.`;
+            },
+
+            showToastMessage(message, type = "success") {
+                this.toastMessage = message;
+                this.toastType = type;
+                this.showToast = true;
+
+                setTimeout(() => {
+                    this.showToast = false;
+                }, 3000);
+            },
+
+            getCsrfToken() {
+                const token = document.querySelector('meta[name="csrf-token"]');
+                return token ? token.getAttribute("content") : "";
+            },
+        };
+    }
+</script>
+
+<!-- Debug Info -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("=== Vendor Dashboard Debug Info ===");
+        console.log("Vendor ID: {{ vendor.id }}");
+        console.log(
+            "Orders data element exists:",
+            !!document.getElementById("orders-data"),
+        );
+
+        const ordersElement = document.getElementById("orders-data");
+        if (ordersElement) {
+            const rawData = ordersElement.textContent;
+            console.log("Raw orders data length:", rawData.length);
+            console.log("Raw orders data preview:", rawData.substring(0, 500));
+
+            try {
+                const parsed = JSON.parse(rawData);
+                console.log(
+                    "Successfully parsed JSON with",
+                    parsed.length,
+                    "orders",
+                );
+                console.log("First order structure:", parsed[0]);
+            } catch (e) {
+                console.error("Failed to parse JSON:", e);
+            }
+        }
+
+        // Check Alpine.js
+        console.log("Alpine.js available:", typeof Alpine !== "undefined");
+
+        // Check if page has loaded completely
+        setTimeout(() => {
+            const dashboard = document.querySelector(
+                '[x-data="vendorDashboard()"]',
+            );
+            console.log("Dashboard element found:", !!dashboard);
+            if (dashboard && dashboard._x_dataStack) {
+                console.log(
+                    "Alpine data initialized:",
+                    dashboard._x_dataStack[0],
+                );
+            }
+        }, 1000);
+    });
+</script>
+{% endblock %}

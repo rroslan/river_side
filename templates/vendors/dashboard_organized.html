@@ -1,0 +1,906 @@
+{% extends 'base.html' %} {% load static %} {% block title %}{{ vendor.name }} -
+Dashboard{% endblock %} {% block extra_css %}
+<!-- Dashboard Version: Organized v1.1 - Updated for correct API URLs -->
+<style>
+    /* Card Styles */
+    .stat-card {
+        background: linear-gradient(135deg, var(--b3) 0%, var(--b2) 100%);
+        border: 1px solid var(--bc-opacity-20);
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .order-card {
+        background: var(--b2);
+        border-left: 4px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+    .order-card:hover {
+        background: var(--b3);
+        transform: translateX(4px);
+    }
+
+    .order-card.pending {
+        border-left-color: var(--warning);
+    }
+    .order-card.confirmed {
+        border-left-color: var(--info);
+    }
+    .order-card.preparing {
+        border-left-color: var(--primary);
+    }
+    .order-card.ready {
+        border-left-color: var(--success);
+    }
+
+    /* Animation */
+    @keyframes pulse-dot {
+        0%,
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 0.5;
+            transform: scale(1.2);
+        }
+    }
+
+    .pulse-dot {
+        animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    /* Layout */
+    .dashboard-grid {
+        display: grid;
+        gap: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    /* Mobile optimizations */
+    @media (max-width: 640px) {
+        .stat-card {
+            padding: 1rem;
+        }
+
+        .stat-card p.text-3xl {
+            font-size: 1.5rem;
+        }
+
+        .order-card {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %} {% block content %}
+<div
+    x-data="vendorDashboard()"
+    x-init="init()"
+    class="min-h-screen bg-base-100"
+>
+    <!-- Header -->
+    <div class="bg-base-200 border-b border-base-300">
+        <div class="container mx-auto px-4 py-6">
+            <div
+                class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+            >
+                <div>
+                    <h1 class="text-3xl font-bold text-primary">
+                        {{ vendor.name }}
+                    </h1>
+                    <p class="text-base-content/70 mt-1">
+                        {{ vendor.get_vendor_type_display }} Dashboard
+                    </p>
+                </div>
+                <div
+                    class="flex flex-col sm:flex-row items-start sm:items-center gap-4"
+                >
+                    <!-- Desktop Navigation Links -->
+                    <div class="hidden sm:flex gap-2">
+                        <a
+                            href="{% url 'vendors:menu_management' vendor.id %}"
+                            class="btn btn-sm btn-ghost"
+                        >
+                            <svg
+                                class="w-4 h-4 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                                ></path>
+                            </svg>
+                            Menu Management
+                        </a>
+                        <a
+                            href="{% url 'vendors:vendor_payment_report' vendor.id %}"
+                            class="btn btn-sm btn-ghost"
+                        >
+                            <svg
+                                class="w-4 h-4 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                ></path>
+                            </svg>
+                            Payment Reports
+                        </a>
+                        <a
+                            href="{% url 'vendors:vendor_logout' %}"
+                            class="btn btn-sm btn-ghost text-error"
+                        >
+                            <svg
+                                class="w-4 h-4 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                                ></path>
+                            </svg>
+                            Logout
+                        </a>
+                    </div>
+
+                    <!-- Mobile Menu Dropdown -->
+                    <div class="dropdown dropdown-end sm:hidden">
+                        <label tabindex="0" class="btn btn-sm btn-ghost">
+                            <svg
+                                class="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 6h16M4 12h16M4 18h16"
+                                ></path>
+                            </svg>
+                        </label>
+                        <ul
+                            tabindex="0"
+                            class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52"
+                        >
+                            <li>
+                                <a
+                                    href="{% url 'vendors:menu_management' vendor.id %}"
+                                >
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                                        ></path>
+                                    </svg>
+                                    Menu Management
+                                </a>
+                            </li>
+                            <li>
+                                <a
+                                    href="{% url 'vendors:vendor_payment_report' vendor.id %}"
+                                >
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                        ></path>
+                                    </svg>
+                                    Payment Reports
+                                </a>
+                            </li>
+                            <li>
+                                <a
+                                    href="{% url 'vendors:vendor_logout' %}"
+                                    class="text-error"
+                                >
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                                        ></path>
+                                    </svg>
+                                    Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Status Indicators -->
+                    <div class="flex items-center gap-2 sm:gap-4">
+                        <!-- Connection Status -->
+                        <div class="flex items-center gap-1 sm:gap-2">
+                            <div
+                                :class="connected ? 'bg-success' : 'bg-error'"
+                                class="w-3 h-3 rounded-full pulse-dot"
+                            ></div>
+                            <span
+                                class="text-xs sm:text-sm"
+                                x-text="connected ? 'Live' : 'Offline'"
+                            ></span>
+                        </div>
+                        <!-- Last Updated -->
+                        <div class="text-xs sm:text-sm text-base-content/60">
+                            <span class="hidden sm:inline">Updated: </span>
+                            <span x-text="lastUpdated"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6">
+        <!-- Stats Cards -->
+        <div
+            class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8 stats-grid"
+        >
+            <!-- Pending Orders -->
+            <div class="stat-card rounded-lg sm:rounded-xl p-4 sm:p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-base-content/60 text-sm">Pending</p>
+                        <p
+                            class="text-3xl font-bold text-warning mt-1"
+                            x-text="stats.pending"
+                        ></p>
+                    </div>
+                    <div class="text-warning bg-warning/20 p-3 rounded-lg">
+                        <svg
+                            class="w-6 h-6"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                            ></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preparing Orders -->
+            <div class="stat-card rounded-lg sm:rounded-xl p-4 sm:p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-base-content/60 text-sm">Preparing</p>
+                        <p
+                            class="text-3xl font-bold text-primary mt-1"
+                            x-text="stats.preparing"
+                        ></p>
+                    </div>
+                    <div class="text-primary bg-primary/20 p-3 rounded-lg">
+                        <svg
+                            class="w-6 h-6"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                            ></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ready Orders -->
+            <div class="stat-card rounded-lg sm:rounded-xl p-4 sm:p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-base-content/60 text-sm">Ready</p>
+                        <p
+                            class="text-3xl font-bold text-success mt-1"
+                            x-text="stats.ready"
+                        ></p>
+                    </div>
+                    <div class="text-success bg-success/20 p-3 rounded-lg">
+                        <svg
+                            class="w-6 h-6"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            ></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Today's Revenue -->
+            <div class="stat-card rounded-lg sm:rounded-xl p-4 sm:p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-base-content/60 text-sm">
+                            Today's Revenue
+                        </p>
+                        <p class="text-3xl font-bold text-accent mt-1">
+                            ${{ stats.today_revenue }}
+                        </p>
+                    </div>
+                    <div class="text-accent bg-accent/20 p-3 rounded-lg">
+                        <svg
+                            class="w-6 h-6"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            ></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="flex flex-wrap gap-2 mb-4 sm:mb-6 overflow-x-auto">
+            <button
+                @click="activeFilter = 'all'"
+                :class="activeFilter === 'all' ? 'btn-primary' : 'btn-ghost'"
+                class="btn btn-sm"
+            >
+                All Orders
+                <span class="badge badge-sm ml-2" x-text="orders.length"></span>
+            </button>
+            <button
+                @click="activeFilter = 'pending'"
+                :class="activeFilter === 'pending' ? 'btn-warning' : 'btn-ghost'"
+                class="btn btn-sm"
+            >
+                Pending
+                <span class="badge badge-sm ml-2" x-text="stats.pending"></span>
+            </button>
+            <button
+                @click="activeFilter = 'preparing'"
+                :class="activeFilter === 'preparing' ? 'btn-primary' : 'btn-ghost'"
+                class="btn btn-sm"
+            >
+                Preparing
+                <span
+                    class="badge badge-sm ml-2"
+                    x-text="stats.preparing"
+                ></span>
+            </button>
+            <button
+                @click="activeFilter = 'ready'"
+                :class="activeFilter === 'ready' ? 'btn-success' : 'btn-ghost'"
+                class="btn btn-sm"
+            >
+                Ready
+                <span class="badge badge-sm ml-2" x-text="stats.ready"></span>
+            </button>
+        </div>
+
+        <!-- Orders Grid -->
+        <div
+            class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4"
+        >
+            <template
+                x-for="orderGroup in filteredOrders"
+                :key="orderGroup.order.id"
+            >
+                <div
+                    class="order-card rounded-lg p-4 sm:p-6"
+                    :class="orderGroup.order.status"
+                >
+                    <!-- Order Header -->
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold">
+                                Table
+                                <span
+                                    x-text="orderGroup.order.table_number"
+                                ></span>
+                            </h3>
+                            <p
+                                class="text-sm text-base-content/60"
+                                x-text="getOrderTime(orderGroup.order.created_at)"
+                            ></p>
+                        </div>
+                        <div
+                            class="badge"
+                            :class="{
+                            'badge-warning': orderGroup.order.status === 'pending',
+                            'badge-info': orderGroup.order.status === 'confirmed',
+                            'badge-primary': orderGroup.order.status === 'preparing',
+                            'badge-success': orderGroup.order.status === 'ready'
+                        }"
+                            x-text="orderGroup.order.status.toUpperCase()"
+                        ></div>
+                    </div>
+
+                    <!-- Order Items -->
+                    <div class="space-y-2 mb-4">
+                        <template
+                            x-for="item in orderGroup.items"
+                            :key="item.id"
+                        >
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <span
+                                        class="font-medium"
+                                        x-text="item.quantity + 'x'"
+                                    ></span>
+                                    <span x-text="item.name"></span>
+                                </div>
+                                <div
+                                    x-show="item.special_instructions"
+                                    class="ml-2 text-xs text-base-content/60"
+                                >
+                                    <svg
+                                        class="w-4 h-4 inline"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+                                        ></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Special Instructions -->
+                    <template
+                        x-for="item in orderGroup.items.filter(i => i.special_instructions)"
+                    >
+                        <div class="text-sm bg-base-300 rounded p-2 mb-4">
+                            <span
+                                class="font-medium"
+                                x-text="item.name + ':'"
+                            ></span>
+                            <span
+                                class="text-base-content/70"
+                                x-text="item.special_instructions"
+                            ></span>
+                        </div>
+                    </template>
+
+                    <!-- Order Footer -->
+                    <div
+                        class="flex justify-between items-center pt-4 border-t border-base-300"
+                    >
+                        <div>
+                            <p class="text-sm text-base-content/60">Customer</p>
+                            <p
+                                class="font-medium"
+                                x-text="orderGroup.order.customer_name || 'Guest'"
+                            ></p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-base-content/60">Total</p>
+                            <p class="text-lg font-bold">
+                                $<span
+                                    x-text="parseFloat(orderGroup.order.total_amount).toFixed(2)"
+                                ></span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="mt-4 flex flex-col sm:flex-row gap-2">
+                        <button
+                            x-show="orderGroup.order.status === 'pending'"
+                            @click="updateOrderStatus(orderGroup.order.id, 'confirmed')"
+                            class="btn btn-info btn-sm flex-1"
+                        >
+                            Accept Order
+                        </button>
+                        <button
+                            x-show="orderGroup.order.status === 'confirmed'"
+                            @click="updateOrderStatus(orderGroup.order.id, 'preparing')"
+                            class="btn btn-warning btn-sm flex-1"
+                        >
+                            Start Preparing
+                        </button>
+                        <button
+                            x-show="orderGroup.order.status === 'preparing'"
+                            @click="updateOrderStatus(orderGroup.order.id, 'ready')"
+                            class="btn btn-success btn-sm flex-1"
+                        >
+                            Mark Ready
+                        </button>
+                        <button
+                            x-show="orderGroup.order.status === 'ready'"
+                            @click="updateOrderStatus(orderGroup.order.id, 'delivered')"
+                            class="btn btn-accent btn-sm flex-1"
+                        >
+                            Delivered
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Empty State -->
+        <div x-show="filteredOrders.length === 0" class="text-center py-16">
+            <div
+                class="inline-flex items-center justify-center w-16 h-16 bg-base-300 rounded-full mb-4"
+            >
+                <svg
+                    class="w-8 h-8 text-base-content/40"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    ></path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold mb-2">No Orders</h3>
+            <p class="text-base-content/60" x-text="getNoOrdersMessage()"></p>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div x-show="showToast" x-transition class="toast toast-top toast-end">
+        <div
+            class="alert"
+            :class="toastType === 'success' ? 'alert-success' : 'alert-error'"
+        >
+            <span x-text="toastMessage"></span>
+        </div>
+    </div>
+</div>
+
+<!-- Orders Data -->
+<script id="orders-data" type="application/json">
+    {{ orders|safe }}
+</script>
+
+<!-- Alpine Component -->
+<script>
+    console.log('Dashboard Organized v1.1 loaded at', new Date().toISOString());
+    function vendorDashboard() {
+        return {
+            orders: [],
+            connected: false,
+            socket: null,
+            reconnectTimeout: null,
+            activeFilter: 'all',
+            lastUpdated: '',
+            showToast: false,
+            toastMessage: '',
+            toastType: 'success',
+
+            get ordersByStatus() {
+                return {
+                    pending: this.orders.filter(o => o.order.status === 'pending'),
+                    confirmed: this.orders.filter(o => o.order.status === 'confirmed'),
+                    preparing: this.orders.filter(o => o.order.status === 'preparing'),
+                    ready: this.orders.filter(o => o.order.status === 'ready')
+                };
+            },
+
+            get filteredOrders() {
+                if (this.activeFilter === 'all') return this.orders;
+                return this.ordersByStatus[this.activeFilter] || [];
+            },
+
+            get stats() {
+                return {
+                    pending: this.ordersByStatus.pending.length,
+                    confirmed: this.ordersByStatus.confirmed.length,
+                    preparing: this.ordersByStatus.preparing.length,
+                    ready: this.ordersByStatus.ready.length,
+                    today_revenue: {{ stats.today_revenue }}
+                };
+            },
+
+            init() {
+                console.log('Initializing vendor dashboard for vendor ID:', {{ vendor.id }});
+                this.loadInitialOrders();
+                this.connectWebSocket();
+                this.updateLastUpdated();
+                setInterval(() => this.updateLastUpdated(), 30000);
+
+                // Ping WebSocket every 30 seconds to keep connection alive
+                setInterval(() => {
+                    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                        this.socket.send(JSON.stringify({ type: 'ping' }));
+                    }
+                }, 30000);
+            },
+
+            loadInitialOrders() {
+                const ordersData = document.getElementById('orders-data');
+                if (ordersData) {
+                    try {
+                        const jsonText = ordersData.textContent.trim();
+                        console.log('Loading initial orders, length:', jsonText.length);
+                        this.orders = JSON.parse(jsonText);
+                        console.log('Loaded', this.orders.length, 'orders');
+                    } catch (e) {
+                        console.error('Error parsing orders:', e);
+                        this.orders = [];
+                    }
+                } else {
+                    console.error('Orders data element not found');
+                    this.orders = [];
+                }
+            },
+
+            connectWebSocket() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws/orders/vendor/{{ vendor.id }}/`;
+
+                console.log('Connecting to WebSocket:', wsUrl);
+
+                try {
+                    this.socket = new WebSocket(wsUrl);
+
+                    this.socket.onopen = () => {
+                        console.log('WebSocket connected successfully');
+                        this.connected = true;
+                        // Clear any reconnection timeouts
+                        if (this.reconnectTimeout) {
+                            clearTimeout(this.reconnectTimeout);
+                            this.reconnectTimeout = null;
+                        }
+                    };
+
+                    this.socket.onmessage = (event) => {
+                        console.log('WebSocket message received:', event.data);
+                        try {
+                            const data = JSON.parse(event.data);
+                            this.handleWebSocketMessage(data);
+                        } catch (e) {
+                            console.error('Error parsing WebSocket message:', e);
+                        }
+                    };
+
+                    this.socket.onclose = (event) => {
+                        console.log('WebSocket closed:', event.code, event.reason);
+                        this.connected = false;
+
+                        // Only reconnect if not manually closed
+                        if (event.code !== 1000) {
+                            this.reconnectTimeout = setTimeout(() => {
+                                console.log('Attempting to reconnect...');
+                                this.connectWebSocket();
+                            }, 3000);
+                        }
+                    };
+
+                    this.socket.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        this.connected = false;
+                    };
+                } catch (error) {
+                    console.error('Error creating WebSocket:', error);
+                    this.connected = false;
+                    // Retry connection
+                    this.reconnectTimeout = setTimeout(() => this.connectWebSocket(), 3000);
+                }
+            },
+
+            handleWebSocketMessage(data) {
+                console.log('Handling WebSocket message type:', data.type);
+
+                switch(data.type) {
+                    case 'order_list':
+                        console.log('Received order list:', data.orders);
+                        this.orders = data.orders || [];
+                        break;
+                    case 'new_order':
+                        this.addNewOrder(data.order);
+                        this.showNotification('New order received!', 'success');
+                        this.playNotificationSound();
+                        break;
+                    case 'new_order_for_vendor':
+                        this.addNewOrder(data.order);
+                        this.showNotification('New order received!', 'success');
+                        this.playNotificationSound();
+                        break;
+                    case 'order_update':
+                        this.updateOrder(data.order);
+                        break;
+                    case 'order_status_change':
+                        console.log('Order status changed:', data.order_id, data.status);
+                        const orderIndex = this.orders.findIndex(o => o.order.id === data.order_id);
+                        if (orderIndex !== -1) {
+                            this.orders[orderIndex].order.status = data.status;
+                            this.showNotification(data.message || 'Order status updated', 'success');
+                        }
+                        break;
+                    case 'pong':
+                        console.log('Received pong');
+                        break;
+                    default:
+                        console.log('Unknown message type:', data.type);
+                }
+            },
+
+            addNewOrder(newOrder) {
+                const exists = this.orders.find(o => o.order.id === newOrder.order.id);
+                if (!exists) {
+                    this.orders.unshift(newOrder);
+                }
+            },
+
+            updateOrder(updatedOrder) {
+                const index = this.orders.findIndex(o => o.order.id === updatedOrder.order.id);
+                if (index !== -1) {
+                    this.orders[index] = updatedOrder;
+                }
+            },
+
+            async updateOrderStatus(orderId, newStatus) {
+                // First, try WebSocket if connected
+                if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                    console.log('Updating order status via WebSocket');
+                    this.socket.send(JSON.stringify({
+                        type: 'update_order_status',
+                        order_id: orderId,
+                        status: newStatus
+                    }));
+
+                    // Optimistically update UI
+                    const orderIndex = this.orders.findIndex(o => o.order.id === orderId);
+                    if (orderIndex !== -1) {
+                        this.orders[orderIndex].order.status = newStatus;
+                    }
+                    this.showNotification('Order updated', 'success');
+                    return;
+                }
+
+                // Fallback to HTTP if WebSocket not available
+                console.log('Updating order status via HTTP (WebSocket not available)');
+                try {
+                    const response = await fetch(`/vendors/{{ vendor.id }}/api/update-order-status/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.getCsrfToken()
+                        },
+                        body: JSON.stringify({
+                            order_id: orderId,
+                            status: newStatus
+                        })
+                    });
+
+                    if (response.ok) {
+                        const orderIndex = this.orders.findIndex(o => o.order.id === orderId);
+                        if (orderIndex !== -1) {
+                            this.orders[orderIndex].order.status = newStatus;
+                        }
+                        this.showNotification('Order updated successfully', 'success');
+                    } else {
+                        this.showNotification('Failed to update order', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error updating order:', error);
+                    this.showNotification('Error updating order', 'error');
+                }
+            },
+
+            getOrderTime(timestamp) {
+                const date = new Date(timestamp);
+                const now = new Date();
+                const diff = Math.floor((now - date) / 60000);
+
+                if (diff < 1) return 'Just now';
+                if (diff < 60) return `${diff} min ago`;
+                if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
+                return date.toLocaleDateString();
+            },
+
+            updateLastUpdated() {
+                this.lastUpdated = new Date().toLocaleTimeString();
+            },
+
+            getNoOrdersMessage() {
+                const messages = {
+                    'all': 'No orders at the moment',
+                    'pending': 'No pending orders',
+                    'preparing': 'No orders being prepared',
+                    'ready': 'No orders ready for pickup'
+                };
+                return messages[this.activeFilter] || 'No orders';
+            },
+
+            showNotification(message, type = 'success') {
+                this.toastMessage = message;
+                this.toastType = type;
+                this.showToast = true;
+                setTimeout(() => this.showToast = false, 3000);
+            },
+
+            playNotificationSound() {
+                const audio = new Audio('/static/sounds/notification.mp3');
+                audio.play().catch(e => console.log('Audio play failed:', e));
+            },
+
+            getCsrfToken() {
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    const [name, value] = cookie.trim().split('=');
+                    if (name === 'csrftoken') return value;
+                }
+                return '';
+            }
+        };
+    }
+
+    // Debug: Log when Alpine initializes
+    document.addEventListener('alpine:init', () => {
+        console.log('Alpine.js initialized');
+    });
+
+    // Debug: Check WebSocket support
+    if (typeof WebSocket === 'undefined') {
+        console.error('WebSocket is not supported in this browser');
+    }
+</script>
+{% endblock %}

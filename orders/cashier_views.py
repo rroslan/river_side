@@ -4,6 +4,7 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import authenticate, login, logout
 from django.urls import reverse
+
 from functools import wraps
 from django.contrib import messages
 from django.db.models import Q, Count, Sum
@@ -11,24 +12,30 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from .models import Order, OrderItem, OrderStatus
 from vendors.models import Table, Vendor
+from core.permissions import CashierPermissions, cashier_required, cashier_permission_required
 import json
 from datetime import datetime, timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 def is_cashier_or_staff(user):
     """Check if user is staff or has cashier permissions"""
-    return user.is_staff or user.groups.filter(name='Cashiers').exists()
+    return user.is_staff or CashierPermissions.is_cashier(user)
 
 def cashier_login_required(view_func):
     """Custom login required decorator that redirects to cashier login"""
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
+            logger.warning(f"Unauthenticated access attempt to cashier view: {request.path}")
             from django.shortcuts import redirect
             login_url = reverse('orders:cashier_login')
             path = request.get_full_path()
             return redirect(f'{login_url}?next={path}')
 
         if not is_cashier_or_staff(request.user):
+            logger.warning(f"Non-cashier user {request.user.username} attempted to access cashier view: {request.path}")
             from django.shortcuts import redirect
             from django.contrib import messages
             messages.error(request, 'You do not have permission to access the cashier dashboard.')
@@ -40,6 +47,7 @@ def cashier_login_required(view_func):
 def cashier_login(request):
     """Cashier login page"""
     if request.user.is_authenticated and is_cashier_or_staff(request.user):
+        logger.info(f"Already authenticated cashier {request.user.username} redirected to dashboard")
         return redirect('orders:cashier_dashboard')
 
     if request.method == 'POST':
@@ -48,14 +56,34 @@ def cashier_login(request):
 
         if username and password:
             user = authenticate(request, username=username, password=password)
-            if user is not None and is_cashier_or_staff(user):
-                login(request, user)
-                next_url = request.GET.get('next', '/cashier/')
-                return redirect(next_url)
+
+            if user:
+                if user.is_active:
+                    if is_cashier_or_staff(user):
+                        login(request, user)
+                        logger.info(f"Successful cashier login: {username}")
+
+                        # Check permissions status
+                        perm_status = CashierPermissions.check_cashier_permissions(user)
+                        if not perm_status['has_all_permissions']:
+                            logger.warning(f"Cashier {username} missing permissions: {perm_status['missing_permissions']}")
+                            messages.warning(request, 'Some permissions may be missing. Contact administrator if you experience issues.')
+
+                        next_url = request.GET.get('next')
+                        if next_url:
+                            return redirect(next_url)
+                        return redirect('orders:cashier_dashboard')
+                    else:
+                        logger.warning(f"Non-cashier user {username} attempted login")
+                        messages.error(request, 'You do not have cashier permissions.')
+                else:
+                    logger.warning(f"Inactive user {username} attempted login")
+                    messages.error(request, 'Your account is inactive.')
             else:
-                messages.error(request, 'Invalid credentials or insufficient permissions.')
+                logger.warning(f"Failed login attempt for username: {username}")
+                messages.error(request, 'Invalid username or password.')
         else:
-            messages.error(request, 'Please enter both username and password.')
+            messages.error(request, 'Please provide both username and password.')
 
     return render(request, 'orders/cashier_login.html')
 
@@ -68,12 +96,25 @@ def cashier_logout(request):
 @cashier_login_required
 def cashier_dashboard(request):
     """Main cashier dashboard showing orders ready for payment"""
+    logger.info(f"Cashier {request.user.username} accessed dashboard")
+
+    # Check user permissions and log any issues
+    perm_status = CashierPermissions.check_cashier_permissions(request.user)
+    if not perm_status['has_all_permissions']:
+        logger.warning(f"Cashier {request.user.username} has incomplete permissions: {perm_status['missing_permissions']}")
+        messages.warning(request, f"You may be missing some permissions. Contact administrator if you experience issues.")
+
     # Get filters from request
     status_filter = request.GET.get('status', 'delivered')
     table_filter = request.GET.get('table', '')
     date_filter = request.GET.get('date', 'today')
 
-    # Base query for orders
+    # Base query for orders - check permission
+    if not request.user.has_perm('orders.view_order'):
+        logger.error(f"User {request.user.username} lacks orders.view_order permission")
+        messages.error(request, "You don't have permission to view orders.")
+        return redirect('orders:cashier_login')
+
     orders = Order.objects.select_related('table').prefetch_related('items__menu_item')
 
     # Apply status filter
@@ -119,6 +160,18 @@ def cashier_dashboard(request):
         'active_tables': Table.objects.filter(
             orders__status__in=['pending', 'confirmed', 'preparing', 'ready', 'delivered']
         ).distinct().count()
+    }
+
+    # Add user permission info to context
+    context = {
+        'orders': page_obj,
+        'stats': stats,
+        'status_filter': status_filter,
+        'table_filter': table_filter,
+        'date_filter': date_filter,
+        'user_permissions': perm_status,
+        'can_change_orders': request.user.has_perm('orders.change_order'),
+        'can_reset_tables': request.user.has_perm('vendors.change_table'),
     }
 
     # Get all active tables for filter dropdown
@@ -171,11 +224,21 @@ def cashier_dashboard(request):
 @require_http_methods(["POST"])
 def mark_order_paid(request, order_id):
     """Mark an order as paid"""
+    logger.info(f"Cashier {request.user.username} attempting to mark order {order_id} as paid")
+
     try:
         order = get_object_or_404(Order, id=order_id)
 
+        # Check specific permission for this action
+        if not request.user.has_perm('orders.change_order'):
+            logger.error(f"User {request.user.username} lacks permission to mark orders as paid")
+            return JsonResponse({
+                'error': 'You do not have permission to mark orders as paid'
+            }, status=403)
+
         # Validate order can be marked as paid
         if order.status not in ['delivered', 'ready']:
+            logger.warning(f"Order {order_id} cannot be paid - status: {order.status}")
             return JsonResponse({
                 'error': f'Cannot mark order as paid. Current status: {order.status}'
             }, status=400)
@@ -227,7 +290,16 @@ def mark_order_paid(request, order_id):
 @require_http_methods(["POST"])
 def reset_table(request, table_number):
     """Reset/clear a table by cancelling unpaid orders"""
+    logger.info(f"Cashier {request.user.username} attempting to reset table {table_number}")
+
     try:
+        # Check specific permission for this action
+        if not request.user.has_perm('vendors.change_table'):
+            logger.error(f"User {request.user.username} lacks permission to reset tables")
+            return JsonResponse({
+                'error': 'You do not have permission to reset tables'
+            }, status=403)
+
         table = get_object_or_404(Table, number=table_number, is_active=True)
 
         # Find unpaid orders for this table
@@ -237,6 +309,7 @@ def reset_table(request, table_number):
         )
 
         if not unpaid_orders.exists():
+            logger.info(f"Table {table_number} already clear - no orders to cancel")
             return JsonResponse({
                 'message': f'Table {table_number} is already clear',
                 'orders_cancelled': 0
@@ -256,12 +329,17 @@ def reset_table(request, table_number):
             order.notes += f"\n[CANCELLED] {reason} - by {request.user.username}"
             order.save()
 
+            # Log the cancellation
+            logger.info(f"Order {order.id} cancelled by {request.user.username} during table {table_number} reset")
+
             cancelled_count += 1
             cancelled_orders.append({
                 'id': str(order.id)[:8],
                 'old_status': old_status,
                 'total_amount': str(order.total_amount)
             })
+
+        logger.info(f"Table {table_number} successfully reset by {request.user.username} - {cancelled_count} orders cancelled")
 
         return JsonResponse({
             'success': True,
@@ -272,6 +350,7 @@ def reset_table(request, table_number):
         })
 
     except Exception as e:
+        logger.error(f"Error resetting table {table_number}: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
 @cashier_login_required

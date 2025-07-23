@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment Report - {{ vendor.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background: linear-gradient(135deg, var(--b3) 0%, var(--b2) 100%);
+        border: 1px solid var(--bc-opacity-20);
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .table-container {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .revenue-positive {
+        color: var(--success);
+    }
+
+    .revenue-pending {
+        color: var(--warning);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-base-100 py-6">
+    <div class="container mx-auto px-4">
+        <!-- Header -->
+        <div class="bg-base-200 rounded-lg p-6 mb-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-primary">Payment Report</h1>
+                    <p class="text-base-content/70 mt-1">{{ vendor.name }} - Financial Overview</p>
+                </div>
+                <div class="flex gap-2">
+                    <a href="{% url 'vendors:vendor_dashboard' vendor.id %}" class="btn btn-ghost btn-sm">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Date Range Filter -->
+            <div class="mt-4 flex flex-col sm:flex-row gap-4">
+                <form method="get" class="flex flex-col sm:flex-row gap-2">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Start Date</span>
+                        </label>
+                        <input type="date" name="start_date" value="{{ date_range.start }}" class="input input-bordered input-sm">
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">End Date</span>
+                        </label>
+                        <input type="date" name="end_date" value="{{ date_range.end }}" class="input input-bordered input-sm">
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">&nbsp;</span>
+                        </label>
+                        <button type="submit" class="btn btn-primary btn-sm">Update Report</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <!-- Total Revenue -->
+            <div class="stat-card rounded-lg p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-base-content/60 text-sm">Total Revenue</p>
+                        <p class="text-3xl font-bold mt-1">${{ summary.total_revenue }}</p>
+                        <p class="text-xs text-base-content/60 mt-1">{{ summary.total_items_sold }} items sold</p>
+                    </div>
+                    <div class="text-primary bg-primary/20 p-3 rounded-lg">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paid Revenue -->
+            <div class="stat-card rounded-lg p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-base-content/60 text-sm">Paid Revenue</p>
+                        <p class="text-3xl font-bold text-success mt-1">${{ summary.paid_revenue }}</p>
+                        <p class="text-xs text-base-content/60 mt-1">{{ summary.paid_orders }} orders</p>
+                    </div>
+                    <div class="text-success bg-success/20 p-3 rounded-lg">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Unpaid Revenue -->
+            <div class="stat-card rounded-lg p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-base-content/60 text-sm">Unpaid Revenue</p>
+                        <p class="text-3xl font-bold text-warning mt-1">${{ summary.unpaid_revenue }}</p>
+                        <p class="text-xs text-base-content/60 mt-1">{{ summary.unpaid_orders }} orders</p>
+                    </div>
+                    <div class="text-warning bg-warning/20 p-3 rounded-lg">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Average Order Value -->
+            <div class="stat-card rounded-lg p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-base-content/60 text-sm">Avg Order Value</p>
+                        <p class="text-3xl font-bold text-info mt-1">${{ summary.average_order_value }}</p>
+                        <p class="text-xs text-base-content/60 mt-1">Per paid order</p>
+                    </div>
+                    <div class="text-info bg-info/20 p-3 rounded-lg">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zM13 19v-4a2 2 0 00-2-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Top Selling Items -->
+            <div class="card bg-base-200 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Top Selling Items</h2>
+                    <div class="overflow-x-auto">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th class="text-right">Qty</th>
+                                    <th class="text-right">Orders</th>
+                                    <th class="text-right">Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in top_items %}
+                                <tr class="hover">
+                                    <td class="font-medium">{{ item.name }}</td>
+                                    <td class="text-right">{{ item.quantity }}</td>
+                                    <td class="text-right">{{ item.orders }}</td>
+                                    <td class="text-right font-bold">${{ item.revenue }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-base-content/60">No sales data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Methods -->
+            <div class="card bg-base-200 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Payment Methods</h2>
+                    <div class="space-y-4">
+                        {% for method, amount in payment_methods.items %}
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="capitalize">{{ method }}</span>
+                                <span class="font-bold">${{ amount|floatformat:2 }}</span>
+                            </div>
+                            <div class="w-full bg-base-300 rounded-full h-2">
+                                {% if summary.paid_revenue > 0 %}
+                                <div class="bg-primary h-2 rounded-full" style="width: {% widthratio amount summary.paid_revenue 100 %}%"></div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Unpaid Orders -->
+        <div class="card bg-base-200 shadow-xl mt-6">
+            <div class="card-body">
+                <h2 class="card-title mb-4">Recent Unpaid Orders</h2>
+                <div class="overflow-x-auto table-container">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Table</th>
+                                <th>Customer</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th class="text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in unpaid_orders_detail %}
+                            <tr>
+                                <td class="font-mono">#{{ order.order_id }}</td>
+                                <td>Table {{ order.table_number }}</td>
+                                <td>{{ order.customer_name|default:"Guest" }}</td>
+                                <td>
+                                    <span class="badge badge-sm
+                                        {% if order.status == 'pending' %}badge-warning{% endif %}
+                                        {% if order.status == 'confirmed' %}badge-info{% endif %}
+                                        {% if order.status == 'preparing' %}badge-primary{% endif %}
+                                        {% if order.status == 'ready' %}badge-success{% endif %}
+                                        {% if order.status == 'delivered' %}badge-accent{% endif %}">
+                                        {{ order.status|upper }}
+                                    </span>
+                                </td>
+                                <td>{{ order.created_at|slice:":10" }}</td>
+                                <td class="text-right font-bold revenue-pending">${{ order.vendor_amount|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-base-content/60">No unpaid orders</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daily Revenue Chart (Simple) -->
+        <div class="card bg-base-200 shadow-xl mt-6">
+            <div class="card-body">
+                <h2 class="card-title mb-4">Daily Revenue Trend</h2>
+                <div class="overflow-x-auto">
+                    <div class="flex gap-2 pb-4" style="min-width: 800px;">
+                        {% for date, revenue in daily_revenue.items %}
+                        <div class="flex-1 flex flex-col items-center">
+                            <div class="w-full bg-base-300 rounded-t" style="height: 200px; position: relative;">
+                                <div class="absolute bottom-0 w-full bg-primary rounded-t transition-all duration-300 hover:bg-primary-focus"
+                                     style="height: {% if max_daily_revenue > 0 %}{% widthratio revenue max_daily_revenue 100 %}{% else %}0{% endif %}%;">
+                                </div>
+                            </div>
+                            <div class="text-xs mt-2 text-center">
+                                <div class="font-bold">${{ revenue|floatformat:0 }}</div>
+                                <div class="text-base-content/60">{{ date|slice:"-5:" }}</div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="w-full text-center py-8 text-base-content/60">
+                            No revenue data for selected period
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add interactivity if needed
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-refresh every 5 minutes
+        setTimeout(() => {
+            window.location.reload();
+        }, 300000);
+    });
+</script>
+{% endblock %}
