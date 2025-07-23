@@ -56,7 +56,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Orders Today</dt>
-                            <dd class="text-lg font-medium text-gray-900">{{ stats.total_orders_today }}</dd>
+                            <dd class="text-lg font-medium text-gray-900" data-stat="total-orders-today">{{ stats.total_orders_today }}</dd>
                         </dl>
                     </div>
                 </div>
@@ -68,9 +68,9 @@
                         <i class="fas fa-exclamation-triangle text-2xl text-orange-600"></i>
                     </div>
                     <div class="ml-5 w-0 flex-1">
-                        <dl></dl>
+                        <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Unpaid Orders</dt>
-                            <dd class="text-lg font-medium text-gray-900">{{ stats.unpaid_orders }}</dd>
+                            <dd class="text-lg font-medium text-gray-900" data-stat="unpaid-orders">{{ stats.unpaid_orders }}</dd>
                         </dl>
                     </div>
                 </div>
@@ -96,9 +96,9 @@
                         <i class="fas fa-dollar-sign text-2xl text-green-600"></i>
                     </div>
                     <div class="ml-5 w-0 flex-1">
-                        <dl></dl>
+                        <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Revenue Today</dt>
-                            <dd class="text-lg font-medium text-gray-900">${{ stats.total_revenue_today }}</dd>
+                            <dd class="text-lg font-medium text-gray-900" data-stat="revenue-today">${{ stats.total_revenue_today }}</dd>
                         </dl>
                     </div>
                 </div>
@@ -112,7 +112,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Active Tables</dt>
-                            <dd class="text-lg font-medium text-gray-900">{{ stats.active_tables }}</dd>
+                            <dd class="text-lg font-medium text-gray-900" data-stat="active-tables">{{ stats.active_tables }}</dd>
                         </dl>
                     </div>
                 </div>
@@ -511,13 +511,28 @@
                         case 'order_list':
                             console.log('Received order list with', data.orders.length, 'orders');
                             this.updateOrderDisplay(data.orders);
+                            if (data.stats) {
+                                this.updateStats(data.stats);
+                            }
                             break;
                         case 'new_order_ready':
                             console.log('New order ready for payment');
                             this.addNewOrder(data.order);
                             this.showNotification('New order ready for payment!');
                             break;
-                        case 'payment_update':
+                        case 'order_status_update':
+                            console.log('Order status update:', data.order_id, data.status);
+                            if (data.status === 'ready' || data.status === 'delivered') {
+                                if (data.order) {
+                                    this.addNewOrder(data.order);
+                                }
+                                this.showNotification(`Order ${data.order_id.slice(0, 8)} is ${data.status} for payment!`);
+                            }
+                            if (data.stats) {
+                                this.updateStats(data.stats);
+                            }
+                            break;
+                        case 'order_payment_update':
                             console.log('Payment update for order:', data.order_id);
                             this.removeOrder(data.order_id);
                             break;
@@ -526,6 +541,38 @@
                             break;
                         default:
                             console.log('Unknown message type:', data.type);
+                    }
+                },
+
+                updateStats(stats) {
+                    // Update Orders Today
+                    const ordersToday = document.querySelector('[data-stat="total-orders-today"]');
+                    if (ordersToday) {
+                        ordersToday.textContent = stats.total_orders_today;
+                    }
+
+                    // Update Unpaid Orders
+                    const unpaidOrders = document.querySelector('[data-stat="unpaid-orders"]');
+                    if (unpaidOrders) {
+                        unpaidOrders.textContent = stats.unpaid_orders;
+                    }
+
+                    // Update Paid Today
+                    const paidToday = document.querySelector('[data-stat="paid-today"]');
+                    if (paidToday) {
+                        paidToday.textContent = stats.paid_orders_today;
+                    }
+
+                    // Update Revenue Today
+                    const revenueToday = document.querySelector('[data-stat="revenue-today"]');
+                    if (revenueToday) {
+                        revenueToday.textContent = `$${stats.total_revenue_today}`;
+                    }
+
+                    // Update Active Tables
+                    const activeTables = document.querySelector('[data-stat="active-tables"]');
+                    if (activeTables) {
+                        activeTables.textContent = stats.active_tables;
                     }
                 },
 

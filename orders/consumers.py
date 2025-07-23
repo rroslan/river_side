@@ -242,6 +242,24 @@ class VendorConsumer(AsyncWebsocketConsumer):
                         'order': await self.get_full_order_data(order_id)
                     }
                 )
+
+                # Notify cashier dashboard about status change
+                if new_status in ['ready', 'delivered']:
+                    # Get updated statistics
+                    cashier_consumer = CashierConsumer()
+                    cashier_consumer.scope = {'user': self.scope['user']}
+                    stats = await cashier_consumer.get_cashier_stats()
+
+                    await self.channel_layer.group_send(
+                        'cashier_dashboard',
+                        {
+                            'type': 'order_status_update',
+                            'order_id': order_id,
+                            'status': new_status,
+                            'stats': stats,
+                            'order': await self.get_order_for_cashier(order_id)
+                        }
+                    )
         else:
             await self.send(text_data=json.dumps({
                 'type': 'error',
@@ -513,9 +531,11 @@ class CashierConsumer(AsyncWebsocketConsumer):
 
         # Send current unpaid orders
         orders = await self.get_unpaid_orders()
+        stats = await self.get_cashier_stats()
         await self.send(text_data=json.dumps({
             'type': 'order_list',
-            'orders': orders
+            'orders': orders,
+            'stats': stats
         }))
 
         logger.info(f"Cashier {self.scope['user'].username} connected to dashboard")
@@ -538,9 +558,11 @@ class CashierConsumer(AsyncWebsocketConsumer):
 
             elif message_type == 'get_orders':
                 orders = await self.get_unpaid_orders()
+                stats = await self.get_cashier_stats()
                 await self.send(text_data=json.dumps({
                     'type': 'order_list',
-                    'orders': orders
+                    'orders': orders,
+                    'stats': stats
                 }))
 
             elif message_type == 'mark_paid':
@@ -561,11 +583,21 @@ class CashierConsumer(AsyncWebsocketConsumer):
         }))
 
     async def order_payment_update(self, event):
-        """Handle order payment status update"""
+        """Handle order payment update broadcast"""
         await self.send(text_data=json.dumps({
-            'type': 'payment_update',
+            'type': 'order_payment_update',
             'order_id': event['order_id'],
             'status': event['status']
+        }))
+
+    async def order_status_update(self, event):
+        """Handle order status update from vendors"""
+        await self.send(text_data=json.dumps({
+            'type': 'order_status_update',
+            'order_id': event['order_id'],
+            'status': event['status'],
+            'stats': event.get('stats', {}),
+            'order': event.get('order')
         }))
 
     @database_sync_to_async
@@ -617,6 +649,30 @@ class CashierConsumer(AsyncWebsocketConsumer):
             })
 
         return orders_data
+
+    @database_sync_to_async
+    def get_cashier_stats(self):
+        """Get current statistics for cashier dashboard"""
+        from django.utils import timezone
+        from django.db.models import Sum
+        from vendors.models import Table
+
+        today = timezone.now().date()
+
+        stats = {
+            'total_orders_today': Order.objects.filter(created_at__date=today).count(),
+            'unpaid_orders': Order.objects.filter(status__in=['delivered', 'ready']).count(),
+            'paid_orders_today': Order.objects.filter(status='paid', created_at__date=today).count(),
+            'total_revenue_today': float(Order.objects.filter(
+                status='paid',
+                created_at__date=today
+            ).aggregate(total=Sum('total_amount'))['total'] or 0),
+            'active_tables': Table.objects.filter(
+                orders__status__in=['pending', 'confirmed', 'preparing', 'ready', 'delivered']
+            ).distinct().count()
+        }
+
+        return stats
 
     @database_sync_to_async
     def mark_order_paid(self, data):
