@@ -753,7 +753,7 @@ Dashboard{% endblock %} {% block extra_css %}
                         console.log('Received order list:', data.orders);
                         this.orders = data.orders || [];
                         break;
-                    case 'new_order':
+                    case 'new_order_for_vendor':
                         this.addNewOrder(data.order);
                         this.showNotification('New order received!', 'success');
                         this.playNotificationSound();

@@ -278,10 +278,41 @@ class VendorConsumer(AsyncWebsocketConsumer):
 
     async def new_order_for_vendor(self, event):
         """Handle new order notification for vendor"""
-        await self.send(text_data=json.dumps({
-            'type': 'new_order',
-            'order': event['order']
-        }))
+        # Format the order data to match the expected structure
+        order_data = event['order']
+
+        # Get vendor-specific items
+        vendor_items = []
+        for item in order_data.get('items', []):
+            if str(item.get('vendor_id')) == str(self.vendor_id):
+                vendor_items.append({
+                    'id': item.get('id'),
+                    'name': item.get('name'),
+                    'quantity': item.get('quantity'),
+                    'special_instructions': item.get('special_instructions', ''),
+                    'preparation_time': item.get('preparation_time', 15)
+                })
+
+        # Format order for vendor dashboard
+        formatted_order = {
+            'order': {
+                'id': order_data.get('id'),
+                'table_number': order_data.get('table_number'),
+                'status': order_data.get('status'),
+                'total_amount': order_data.get('total_amount'),
+                'created_at': order_data.get('created_at'),
+                'customer_name': order_data.get('customer_name', ''),
+                'notes': order_data.get('notes', '')
+            },
+            'items': vendor_items
+        }
+
+        # Only send if vendor has items in this order
+        if vendor_items:
+            await self.send(text_data=json.dumps({
+                'type': 'new_order_for_vendor',
+                'order': formatted_order
+            }))
 
     @database_sync_to_async
     def check_vendor_permission(self):
