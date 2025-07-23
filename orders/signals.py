@@ -43,9 +43,13 @@ def track_order_status_change(sender, instance, **kwargs):
 
                 elif instance.status == 'ready' and not instance.ready_at:
                     instance.ready_at = now
+                    # Notify cashier when order is ready
+                    notify_cashier_order_ready(instance)
 
                 elif instance.status == 'delivered' and not instance.delivered_at:
                     instance.delivered_at = now
+                    # Notify cashier when order is delivered
+                    notify_cashier_order_ready(instance)
 
                 elif instance.status == 'paid' and not instance.paid_at:
                     instance.paid_at = now
@@ -221,6 +225,36 @@ def send_new_order_notification_for_item(order_item):
             'order': order_data
         })
         logger.info(f"Notification sent to vendor group: {vendor_group}")
+
+def notify_cashier_order_ready(order):
+    """Notify cashier dashboard when an order is ready or delivered"""
+    logger.info(f"notify_cashier_order_ready called for order {order.id}, status: {order.status}")
+
+    try:
+        order_data = serialize_order_for_notification(order)
+
+        # Calculate cashier-specific data
+        from orders.consumers import CashierConsumer
+        cashier_consumer = CashierConsumer()
+
+        # Send to cashier dashboard group
+        async_to_sync(channel_layer.group_send)('cashier_dashboard', {
+            'type': 'order_status_update',
+            'order_id': str(order.id),
+            'status': order.status,
+            'order': {
+                'id': str(order.id),
+                'table_number': order.table.number,
+                'status': order.status,
+                'total_amount': str(order.total_amount),
+                'created_at': order.created_at.isoformat(),
+                'customer_name': order.customer_name or 'Guest',
+                'vendor_items': []  # Cashier doesn't need item details for notification
+            }
+        })
+        logger.info(f"Cashier notification sent for order {order.id}")
+    except Exception as e:
+        logger.error(f"Error notifying cashier: {e}", exc_info=True)
 
 def send_order_status_change_notification(order, old_status, new_status, message=""):
     """Send specific status change notification"""

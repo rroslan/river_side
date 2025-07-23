@@ -556,43 +556,52 @@ class CashierConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         self.cashier_group_name = 'cashier_dashboard'
+        logger.info(f"CashierConsumer: Connection attempt from user {self.scope.get('user')}")
 
         # Check if user has cashier permissions
         if not await self.check_cashier_permission():
+            logger.warning(f"CashierConsumer: User {self.scope.get('user')} lacks cashier permissions")
             await self.close()
             return
 
         # Join cashier group
+        logger.info(f"CashierConsumer: Adding channel {self.channel_name} to group {self.cashier_group_name}")
         await self.channel_layer.group_add(
             self.cashier_group_name,
             self.channel_name
         )
+        logger.info(f"CashierConsumer: Successfully joined group {self.cashier_group_name}")
 
         await self.accept()
 
         # Send current unpaid orders
         orders = await self.get_unpaid_orders()
         stats = await self.get_cashier_stats()
+        logger.info(f"CashierConsumer: Sending initial data - {len(orders)} unpaid orders")
         await self.send(text_data=json.dumps({
             'type': 'order_list',
             'orders': orders,
             'stats': stats
         }))
 
-        logger.info(f"Cashier {self.scope['user'].username} connected to dashboard")
+        logger.info(f"CashierConsumer: Cashier {self.scope['user'].username} connected to dashboard")
 
     async def disconnect(self, close_code):
         # Leave cashier group
+        logger.info(f"CashierConsumer: Disconnecting from group {self.cashier_group_name}")
         await self.channel_layer.group_discard(
             self.cashier_group_name,
             self.channel_name
         )
+        logger.info(f"CashierConsumer: Cashier disconnected: {close_code}")
         logger.info(f"Cashier disconnected")
 
     async def receive(self, text_data):
+        """Handle incoming WebSocket messages"""
         try:
             data = json.loads(text_data)
             message_type = data.get('type')
+            logger.info(f"CashierConsumer: Received message type: {message_type}")
 
             if message_type == 'ping':
                 await self.send(text_data=json.dumps({'type': 'pong'}))
@@ -633,6 +642,7 @@ class CashierConsumer(AsyncWebsocketConsumer):
 
     async def order_status_update(self, event):
         """Handle order status update from vendors"""
+        logger.info(f"CashierConsumer.order_status_update: Received status update for order {event['order_id']} - status: {event['status']}")
         await self.send(text_data=json.dumps({
             'type': 'order_status_update',
             'order_id': event['order_id'],
@@ -640,6 +650,7 @@ class CashierConsumer(AsyncWebsocketConsumer):
             'stats': event.get('stats', {}),
             'order': event.get('order')
         }))
+        logger.info(f"CashierConsumer.order_status_update: Sent update to cashier dashboard")
 
     @database_sync_to_async
     def check_cashier_permission(self):
