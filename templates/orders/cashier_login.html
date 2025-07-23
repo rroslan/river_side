@@ -1,185 +1,167 @@
-<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Cashier Login - River Side Restaurant</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link
-            href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css"
-            rel="stylesheet"
-            type="text/css"
-        />
-        <link
-            rel="stylesheet"
-            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-        />
-    </head>
-    <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-        <div
-            class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
-        >
-            <div class="max-w-md w-full space-y-8">
-                <!-- Header -->
-                <div class="text-center">
+{% extends 'base.html' %} {% load static %} {% block title %}Cashier Login -
+River Side Restaurant{% endblock %} {% block extra_css %}
+<link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+/>
+{% endblock %} {% block content %}
+<div class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div
+        class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
+    >
+        <div class="max-w-md w-full space-y-8">
+            <!-- Header -->
+            <div class="text-center">
+                <div
+                    class="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mb-4"
+                >
+                    <i class="fas fa-cash-register text-2xl text-white"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900">Cashier Login</h2>
+                <p class="mt-2 text-sm text-gray-600">River Side Restaurant</p>
+            </div>
+
+            <!-- Login Form -->
+            <div class="bg-white rounded-lg shadow-xl p-8">
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+
+                    <!-- Display Messages -->
+                    {% if messages %} {% for message in messages %}
                     <div
-                        class="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mb-4"
+                        class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}"
                     >
-                        <i class="fas fa-cash-register text-2xl text-white"></i>
+                        <i
+                            class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} mr-2"
+                        ></i>
+                        {{ message }}
                     </div>
-                    <h2 class="text-3xl font-bold text-gray-900">
-                        Cashier Login
-                    </h2>
-                    <p class="mt-2 text-sm text-gray-600">
-                        River Side Restaurant
-                    </p>
-                </div>
+                    {% endfor %} {% endif %}
 
-                <!-- Login Form -->
-                <div class="bg-white rounded-lg shadow-xl p-8">
-                    <form method="post" class="space-y-6">
-                        {% csrf_token %}
-
-                        <!-- Display Messages -->
-                        {% if messages %} {% for message in messages %}
-                        <div
-                            class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}"
-                        >
+                    <!-- Username Field -->
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">Username</span>
+                        </label>
+                        <div class="relative">
+                            <input
+                                type="text"
+                                name="username"
+                                required
+                                class="input input-bordered w-full pl-10"
+                                placeholder="Enter your username"
+                                autocomplete="username"
+                            />
                             <i
-                                class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %} mr-2"
+                                class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                             ></i>
-                            {{ message }}
-                        </div>
-                        {% endfor %} {% endif %}
-
-                        <!-- Username Field -->
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text font-medium"
-                                    >Username</span
-                                >
-                            </label>
-                            <div class="relative">
-                                <input
-                                    type="text"
-                                    name="username"
-                                    required
-                                    class="input input-bordered w-full pl-10"
-                                    placeholder="Enter your username"
-                                    autocomplete="username"
-                                />
-                                <i
-                                    class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                                ></i>
-                            </div>
-                        </div>
-
-                        <!-- Password Field -->
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text font-medium"
-                                    >Password</span
-                                >
-                            </label>
-                            <div class="relative">
-                                <input
-                                    type="password"
-                                    name="password"
-                                    required
-                                    class="input input-bordered w-full pl-10"
-                                    placeholder="Enter your password"
-                                    autocomplete="current-password"
-                                />
-                                <i
-                                    class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                                ></i>
-                            </div>
-                        </div>
-
-                        <!-- Submit Button -->
-                        <button type="submit" class="btn btn-primary w-full">
-                            <i class="fas fa-sign-in-alt mr-2"></i>
-                            Sign In
-                        </button>
-                    </form>
-
-                    <!-- Footer Links -->
-                    <div class="mt-6 pt-6 border-t border-gray-200">
-                        <div class="flex items-center justify-between text-sm">
-                            <a href="/" class="link link-primary">
-                                <i class="fas fa-home mr-1"></i>
-                                Back to Restaurant
-                            </a>
-                            <a href="/admin/" class="link link-secondary">
-                                <i class="fas fa-cog mr-1"></i>
-                                Admin Panel
-                            </a>
                         </div>
                     </div>
-                </div>
 
-                <!-- Quick Access Info -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-3">
-                        <i class="fas fa-info-circle text-blue-500 mr-2"></i>
-                        Default Credentials
-                    </h3>
-                    <div class="space-y-2 text-sm text-gray-600">
-                        <div class="bg-gray-50 p-3 rounded">
-                            <div class="font-medium">Cashier Account:</div>
-                            <div>
-                                Username:
-                                <code class="bg-gray-200 px-1 rounded"
-                                    >test_cashier</code
-                                >
-                            </div>
-                            <div>
-                                Password:
-                                <code class="bg-gray-200 px-1 rounded"
-                                    >cashier123</code
-                                >
-                            </div>
-                        </div>
-                        <div class="text-xs text-gray-500 mt-2">
+                    <!-- Password Field -->
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">Password</span>
+                        </label>
+                        <div class="relative">
+                            <input
+                                type="password"
+                                name="password"
+                                required
+                                class="input input-bordered w-full pl-10"
+                                placeholder="Enter your password"
+                                autocomplete="current-password"
+                            />
                             <i
-                                class="fas fa-exclamation-triangle text-yellow-500 mr-1"
+                                class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                             ></i>
-                            Please change the default password after first login
                         </div>
                     </div>
-                </div>
 
-                <!-- Access Information -->
-                <div class="text-center text-sm text-gray-500">
-                    <p>Need help? Contact your system administrator</p>
-                    <p class="mt-1">
-                        <i class="fas fa-shield-alt mr-1"></i>
-                        Secure login required for cashier access
-                    </p>
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-primary w-full">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Sign In
+                    </button>
+                </form>
+
+                <!-- Footer Links -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <div class="flex items-center justify-between text-sm">
+                        <a href="/" class="link link-primary">
+                            <i class="fas fa-home mr-1"></i>
+                            Back to Restaurant
+                        </a>
+                        <a href="/admin/" class="link link-secondary">
+                            <i class="fas fa-cog mr-1"></i>
+                            Admin Panel
+                        </a>
+                    </div>
                 </div>
             </div>
+
+            <!-- Quick Access Info -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-3">
+                    <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                    Default Credentials
+                </h3>
+                <div class="space-y-2 text-sm text-gray-600">
+                    <div class="bg-gray-50 p-3 rounded">
+                        <div class="font-medium">Cashier Account:</div>
+                        <div>
+                            Username:
+                            <code class="bg-gray-200 px-1 rounded"
+                                >test_cashier</code
+                            >
+                        </div>
+                        <div>
+                            Password:
+                            <code class="bg-gray-200 px-1 rounded"
+                                >cashier123</code
+                            >
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-2">
+                        <i
+                            class="fas fa-exclamation-triangle text-yellow-500 mr-1"
+                        ></i>
+                        Please change the default password after first login
+                    </div>
+                </div>
+            </div>
+
+            <!-- Access Information -->
+            <div class="text-center text-sm text-gray-500">
+                <p>Need help? Contact your system administrator</p>
+                <p class="mt-1">
+                    <i class="fas fa-shield-alt mr-1"></i>
+                    Secure login required for cashier access
+                </p>
+            </div>
         </div>
+    </div>
 
-        <script>
-            // Auto-focus on username field
-            document.addEventListener("DOMContentLoaded", function () {
-                const usernameField = document.querySelector(
-                    'input[name="username"]',
-                );
-                if (usernameField) {
-                    usernameField.focus();
-                }
-            });
+    <script>
+        // Auto-focus on username field
+        document.addEventListener("DOMContentLoaded", function () {
+            const usernameField = document.querySelector(
+                'input[name="username"]',
+            );
+            if (usernameField) {
+                usernameField.focus();
+            }
+        });
 
-            // Enter key handling
-            document.addEventListener("keypress", function (e) {
-                if (e.key === "Enter") {
-                    const form = document.querySelector("form");
-                    if (form) {
-                        form.submit();
-                    }
+        // Enter key handling
+        document.addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+                const form = document.querySelector("form");
+                if (form) {
+                    form.submit();
                 }
-            });
-        </script>
-    </body>
-</html>
+            }
+        });
+    </script>
+</div>
+{% endblock %}
